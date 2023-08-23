@@ -80,8 +80,8 @@ class RoarCompetitionSolution:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
-         # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 3) % len(self.maneuverable_waypoints)]
+         # We use the 2rd waypoint ahead of the current waypoint as the target waypoint
+        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 2) % len(self.maneuverable_waypoints)]
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -92,7 +92,7 @@ class RoarCompetitionSolution:
 
         # Proportional controller to steer the vehicle towards the target waypoint
         steer_control = (
-            -8.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
+            -6.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
