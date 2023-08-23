@@ -26,20 +26,25 @@ class RoarCompetitionRule:
     ):
         return np.all(self.waypoint_occupancy)
 
+    def percent_complete(
+        self
+    ):
+        return np.sum(self.waypoint_occupancy) / len(self.waypoint_occupancy)
+
     def tick(
         self
     ):
         current_location = self.vehicle.get_3d_location()
         delta_vector = current_location - self._last_vehicle_location
         delta_vector_norm = np.linalg.norm(delta_vector)
-        delta_vector_unit = (delta_vector / delta_vector_norm) if delta_vector_norm < 1e-5 else np.zeros(3)
+        delta_vector_unit = (delta_vector / delta_vector_norm) if delta_vector_norm >= 1e-5 else np.zeros(3)
         for i,waypoint in enumerate(self.waypoints):
             waypoint_delta = waypoint.location - current_location
             projection = np.dot(waypoint_delta,delta_vector_unit)
             projection = np.clip(projection,0,delta_vector_norm)
             closest_point_on_segment = current_location + projection * delta_vector_unit
             distance = np.linalg.norm(waypoint.location - closest_point_on_segment)
-            if distance < 1.0:
+            if distance < 4.0:
                 self.waypoint_occupancy[i] = True
         self._last_vehicle_location = current_location
     
@@ -146,6 +151,7 @@ async def evaluate_solution(
             await rule.respawn()
         
         rule.tick()
+        print("Percent complete: {}".format(rule.percent_complete()))
         if rule.lap_finished():
             break
         
