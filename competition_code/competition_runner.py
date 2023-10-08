@@ -7,55 +7,58 @@ import carla
 import numpy as np
 import gymnasium as gym
 import asyncio
+from PyGame_Viewer2 import PyGameViewer2
+
+
 
 class RoarCompetitionRule:
     def __init__(
-        self,
-        waypoints : List[roar_py_interface.RoarPyWaypoint],
-        vehicle : roar_py_carla.RoarPyCarlaActor,
-        world: roar_py_carla.RoarPyCarlaWorld
+            self,
+            waypoints: List[roar_py_interface.RoarPyWaypoint],
+            vehicle: roar_py_carla.RoarPyCarlaActor,
+            world: roar_py_carla.RoarPyCarlaWorld
     ) -> None:
         self.waypoints = waypoints
-        self.waypoint_occupancy = np.zeros(len(waypoints),dtype=np.bool_)
+        self.waypoint_occupancy = np.zeros(len(waypoints), dtype=np.bool_)
         self.vehicle = vehicle
         self.world = world
         self._last_vehicle_location = vehicle.get_3d_location()
-    
+
     def lap_finished(
-        self
+            self
     ):
         return np.all(self.waypoint_occupancy)
 
     def percent_complete(
-        self
+            self
     ):
         return np.sum(self.waypoint_occupancy) / len(self.waypoint_occupancy)
 
     def tick(
-        self
+            self
     ):
         current_location = self.vehicle.get_3d_location()
         delta_vector = current_location - self._last_vehicle_location
         delta_vector_norm = np.linalg.norm(delta_vector)
         delta_vector_unit = (delta_vector / delta_vector_norm) if delta_vector_norm >= 1e-5 else np.zeros(3)
-        for i,waypoint in enumerate(self.waypoints):
+        for i, waypoint in enumerate(self.waypoints):
             waypoint_delta = waypoint.location - current_location
-            projection = np.dot(waypoint_delta,delta_vector_unit)
-            projection = np.clip(projection,0,delta_vector_norm)
+            projection = np.dot(waypoint_delta, delta_vector_unit)
+            projection = np.clip(projection, 0, delta_vector_norm)
             closest_point_on_segment = current_location + projection * delta_vector_unit
             distance = np.linalg.norm(waypoint.location - closest_point_on_segment)
             if distance < 4.0:
                 self.waypoint_occupancy[i] = True
         self._last_vehicle_location = current_location
-    
+
     async def respawn(
-        self
+            self
     ):
         vehicle_location = self.vehicle.get_3d_location()
-    
+
         closest_waypoint_dist = np.inf
         closest_waypoint_idx = 0
-        for i,waypoint in enumerate(self.waypoints):
+        for i, waypoint in enumerate(self.waypoints):
             waypoint_dist = np.linalg.norm(vehicle_location - waypoint.location)
             if waypoint_dist < closest_waypoint_dist:
                 closest_waypoint_dist = waypoint_dist
@@ -70,22 +73,23 @@ class RoarCompetitionRule:
         self.vehicle.set_angular_velocity(np.zeros(3))
         for _ in range(20):
             await self.world.step()
-        
+
         self._last_vehicle_location = self.vehicle.get_3d_location()
 
+
 async def evaluate_solution(
-    world : roar_py_carla.RoarPyCarlaWorld,
-    solution_constructor : Type[RoarCompetitionSolution],
-    max_seconds = 1200,
-    enable_visualization : bool = False,
+        world: roar_py_carla.RoarPyCarlaWorld,
+        solution_constructor: Type[RoarCompetitionSolution],
+        max_seconds=1200,
+        enable_visualization: bool = False,
 ) -> Optional[Dict[str, Any]]:
     if enable_visualization:
-        viewer = ManualControlViewer()
-    
+        viewer = PyGameViewer2()
+
     waypoints = world.maneuverable_waypoints
     vehicle = world.spawn_vehicle(
         "vehicle.dallara.dallara",
-        waypoints[10].location + np.array([0,0,1]),
+        waypoints[10].location + np.array([0, 0, 1]),
         waypoints[10].roll_pitch_yaw,
         True,
     )
@@ -93,8 +97,9 @@ async def evaluate_solution(
 
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,
-        np.array([-2.0 * vehicle.bounding_box.extent[0], 0.0, 3.0 * vehicle.bounding_box.extent[2]]), # relative position
-        np.array([0, 10/180.0*np.pi, 0]), # relative rotation
+        np.array([-2.0 * vehicle.bounding_box.extent[0], 0.0, 3.0 * vehicle.bounding_box.extent[2]]),
+        # relative position
+        np.array([0, 10 / 180.0 * np.pi, 0]),  # relative rotation
         image_width=1024,
         image_height=768
     )
@@ -119,7 +124,7 @@ async def evaluate_solution(
     assert occupancy_map_sensor is not None
     assert collision_sensor is not None
 
-    solution : RoarCompetitionSolution = solution_constructor(
+    solution: RoarCompetitionSolution = solution_constructor(
         waypoints,
         RoarCompetitionAgentWrapper(vehicle),
         camera,
@@ -129,17 +134,17 @@ async def evaluate_solution(
         occupancy_map_sensor,
         collision_sensor
     )
-    rule = RoarCompetitionRule(waypoints,vehicle,world)
+    rule = RoarCompetitionRule(waypoints, vehicle, world)
 
     for i in range(20):
         await world.step()
-    
+
     await vehicle.receive_observation()
     await solution.initialize()
 
     start_time = world.last_tick_elapsed_seconds
     current_time = start_time
-    
+
     while True:
         current_time = world.last_tick_elapsed_seconds
         if current_time - start_time > max_seconds:
@@ -149,27 +154,28 @@ async def evaluate_solution(
         collision_impulse_norm = np.linalg.norm(collision_sensor.get_last_observation().impulse_normal)
         if collision_impulse_norm > 100.0:
             await rule.respawn()
-        
+
         rule.tick()
         print("Percent complete: {}".format(rule.percent_complete()))
         if rule.lap_finished():
             break
-        
+
         if enable_visualization:
             if viewer.render(camera.get_last_observation()) is None:
                 return None
 
         await solution.step()
         await world.step()
-    
+
     end_time = world.last_tick_elapsed_seconds
     vehicle.close()
     if enable_visualization:
         viewer.close()
-    
+
     return {
-        "elapsed_time" : end_time - start_time,
+        "elapsed_time": end_time - start_time,
     }
+
 
 async def main():
     carla_client = carla.Client('localhost', 2000)
@@ -188,6 +194,7 @@ async def main():
         print("Solution finished in {} seconds".format(evaluation_result["elapsed_time"]))
     else:
         print("Solution failed to finish in time")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
