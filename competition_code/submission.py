@@ -7,30 +7,34 @@ from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
 
-def normalize_rad(rad : float):
+
+def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
-def filter_waypoints(location : np.ndarray, current_idx: int, waypoints : List[roar_py_interface.RoarPyWaypoint]) -> int:
-    def dist_to_waypoint(waypoint : roar_py_interface.RoarPyWaypoint):
+
+def filter_waypoints(location: np.ndarray, current_idx: int, waypoints: List[roar_py_interface.RoarPyWaypoint]) -> int:
+    def dist_to_waypoint(waypoint: roar_py_interface.RoarPyWaypoint):
         return np.linalg.norm(
             location[:2] - waypoint.location[:2]
         )
+
     for i in range(current_idx, len(waypoints) + current_idx):
-        if dist_to_waypoint(waypoints[i%len(waypoints)]) < 3:
+        if dist_to_waypoint(waypoints[i % len(waypoints)]) < 3:
             return i % len(waypoints)
     return current_idx
 
+
 class RoarCompetitionSolution:
     def __init__(
-        self,
-        maneuverable_waypoints: List[roar_py_interface.RoarPyWaypoint],
-        vehicle : roar_py_interface.RoarPyActor,
-        camera_sensor : roar_py_interface.RoarPyCameraSensor,
-        location_sensor : roar_py_interface.RoarPyLocationInWorldSensor,
-        velocity_sensor : roar_py_interface.RoarPyVelocimeterSensor,
-        rpy_sensor : roar_py_interface.RoarPyRollPitchYawSensor,
-        occupancy_map_sensor : roar_py_interface.RoarPyOccupancyMapSensor,
-        collision_sensor : roar_py_interface.RoarPyCollisionSensor,
+            self,
+            maneuverable_waypoints: List[roar_py_interface.RoarPyWaypoint],
+            vehicle: roar_py_interface.RoarPyActor,
+            camera_sensor: roar_py_interface.RoarPyCameraSensor,
+            location_sensor: roar_py_interface.RoarPyLocationInWorldSensor,
+            velocity_sensor: roar_py_interface.RoarPyVelocimeterSensor,
+            rpy_sensor: roar_py_interface.RoarPyRollPitchYawSensor,
+            occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor,
+            collision_sensor: roar_py_interface.RoarPyCollisionSensor,
     ) -> None:
         self.maneuverable_waypoints = maneuverable_waypoints
         self.vehicle = vehicle
@@ -40,7 +44,7 @@ class RoarCompetitionSolution:
         self.rpy_sensor = rpy_sensor
         self.occupancy_map_sensor = occupancy_map_sensor
         self.collision_sensor = collision_sensor
-    
+
     async def initialize(self) -> None:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
@@ -57,9 +61,8 @@ class RoarCompetitionSolution:
             self.maneuverable_waypoints
         )
 
-
     async def step(
-        self
+            self
     ) -> None:
         """
         This function is called every world step.
@@ -73,26 +76,27 @@ class RoarCompetitionSolution:
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
-        
+
         # Find the waypoint closest to the vehicle
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
-         # We use the 2rd waypoint ahead of the current waypoint as the target waypoint
-        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 2) % len(self.maneuverable_waypoints)]
+        # We use the 2rd waypoint ahead of the current waypoint as the target waypoint
+        waypoint_to_follow = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 2) % len(self.maneuverable_waypoints)]
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
-        heading_to_waypoint = np.arctan2(vector_to_waypoint[1],vector_to_waypoint[0])
+        heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
         # Proportional controller to steer the vehicle towards the target waypoint
         steer_control = (
-            -6.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
+                -6.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
