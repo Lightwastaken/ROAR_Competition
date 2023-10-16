@@ -5,7 +5,6 @@ import carla
 import numpy as np
 import asyncio
 from typing import Dict, Any, List
-import cv2 as cv
 from Manual_Viewer import ManualControlViewerr
 from FullView import  FullView
 # from ROAR_Competition.competition_code.Beta_Viewer import Beta_Viewer
