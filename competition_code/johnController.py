@@ -6,6 +6,9 @@ import numpy as np
 import asyncio
 from typing import Dict, Any, List
 import cv2 as cv
+from Manual_Viewer import ManualControlViewerr
+from FullView import  FullView
+# from ROAR_Competition.competition_code.Beta_Viewer import Beta_Viewer
 
 
 def normalize_rad(rad: float):
@@ -29,7 +32,7 @@ async def main():
     carla_client = carla.Client('127.0.0.1', 2000)
     carla_client.set_timeout(5.0)
     roar_py_instance = roar_py_carla.RoarPyCarlaInstance(carla_client)
-    viewer = PyGameViewer2()
+    viewer = FullView()
 
     carla_world = roar_py_instance.world
     carla_world.set_asynchronous(True)
@@ -37,7 +40,7 @@ async def main():
 
     way_points = carla_world.maneuverable_waypoints
     vehicle = carla_world.spawn_vehicle(
-        "vehicle.audi.a2",
+        "vehicle.dallara.dallara",
         way_points[10].location + np.array([0, 0, 1]),
         way_points[10].roll_pitch_yaw
     )
@@ -48,11 +51,11 @@ async def main():
     assert vehicle is not None
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,  # Specify what kind of data you want to receive
-        np.array([0.0 * vehicle.bounding_box.extent[0], 0.0, 20.0 * vehicle.bounding_box.extent[2]]),
+        np.array([-0 * vehicle.bounding_box.extent[0], -10, 3 * vehicle.bounding_box.extent[2]]),
         # relative position
-        np.array([0, 90 / 180.0 * np.pi, 0]),  # relative rotation
-        image_width=500,
-        image_height=250
+        np.array([0 , 0 / 180.0 * np.pi, 1.5]),  # relative rotation
+        image_width=1920,
+        image_height=1080
     )
     locaton = vehicle.attach_location_in_world_sensor(
         roar_py_interface.RoarPyLocationInWorldSensorData
@@ -92,7 +95,7 @@ async def main():
                 way_points
             )
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-            waypoint_to_follow = way_points[(current_waypoint_idx + 3) % len(way_points)]
+            waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
 
             # Calculate delta vector towards the target waypoint
             vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -106,24 +109,23 @@ async def main():
             throttle_control = 0.175 * (20 - np.linalg.norm(vehicle.get_linear_3d_velocity()))
 
             if depth_value < 25:
-                throttle_control = np.clip(throttle_control, 0, 0.3)
-            elif depth_value < 30 and depth_value > 25:
                 throttle_control = np.clip(throttle_control, 0, 0.4)
-            elif depth_value < 35 and depth_value > 30:
-                throttle_control = np.clip(throttle_control, 0, 0.6)
-            elif depth_value < 40 and depth_value > 35:
-                throttle_control = np.clip(throttle_control, 0, 0.8)
+            elif 30 > depth_value > 25:
+                throttle_control = np.clip(throttle_control, 0, 0.5)
+            elif 35 > depth_value > 30:
+                throttle_control = np.clip(throttle_control, 0, 0.7)
+            elif 40 > depth_value > 35:
+                throttle_control = np.clip(throttle_control, 0, 0.9)
 
             # use the throttle control to define the aggressiveness of the steer control
             steer_value = -7.0
             if throttle_control <= 0.5:
                 steer_value = -7.0
-            elif throttle_control < 0.8 and throttle_control > 0.5:
+            elif 0.8 > throttle_control > 0.5:
                 steer_value = -5.0
             elif throttle_control > 0.8:
                 steer_value = -2.0
             # Proportional controller to steer the vehicle towards the target waypoint
-
             steer_control = (
                     steer_value / np.sqrt(np.linalg.norm(vehicle.get_linear_3d_velocity())) * delta_heading / np.pi
             ) if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)

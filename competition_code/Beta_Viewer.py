@@ -3,6 +3,7 @@ import pygame
 import roar_py_carla
 import roar_py_interface
 from PIL import Image, ImageOps, ImageDraw
+import io
 import roar_py_interface
 from typing import Optional, Dict, Any
 import logging
@@ -15,7 +16,7 @@ import transforms3d as tr3d
 import io
 import cv2
 import roar_py_interface
-import csv
+
 logging.basicConfig(level=logging.INFO)
 matplotlib.use("TkAgg")
 
@@ -107,25 +108,15 @@ class PyGameViewer2:
         x_val = location.x
         y_val = location.y
         print(str(x_val) + " " + str(y_val))
-        # if resetSec >= 60:
-        #     plt.clf()
+        if resetSec >= 60:
+            plt.clf()
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format='png')
         plt.show(block=False)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                f = open('testlogs.txt', 'a+')
-                try:
-                    contents = f.readlines()
-                    a = contents.count("~")
-                except:
-                    f.write("attempt: " + '0' + '~')
-                f.write("attempt: " + str(a) + '~')
-                f.write('\n')
-                f.write(str(self.seconds_array))
-                f.write('\n')
-                f.write(str(self.depth_value_array))
-                f.write('\n')
-                f.write('-----------------------------------------')
-                f.write('\n')
+                # cv2.destroyAllWindows()
                 pygame.quit()
                 return None
 
@@ -139,7 +130,6 @@ class PyGameViewer2:
         image_surface = pygame.image.fromstring(combined_img_pil.tobytes(), combined_img_pil.size,
                                                 combined_img_pil.mode).convert()
         self.screen.fill((0, 0, 0))
-
         self.screen.blit(image_surface, (0, 0))
         # self.screen.blit(surf, (image_pil.width, image2_pil.height))
 
