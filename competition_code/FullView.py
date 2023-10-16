@@ -16,11 +16,12 @@ import io
 import cv2
 import roar_py_interface
 import csv
+
 logging.basicConfig(level=logging.INFO)
 matplotlib.use("TkAgg")
 
 
-class PyGameViewer2:
+class FullView:
     def __init__(
             self
     ):
@@ -40,12 +41,9 @@ class PyGameViewer2:
         pygame.display.set_caption("RoarPy Viewer")
         pygame.key.set_repeat()
         self.clock = pygame.time.Clock()
-        self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
-        self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
         self.depth_value_array = []
         self.seconds_array = []
         self.sameSecond_array = []
-        self.preSec = 0
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2: roar_py_interface.RoarPyCameraSensorDataDepth,
@@ -57,56 +55,20 @@ class PyGameViewer2:
         # plt.figure(figsize=(50,50))
         # logging.infO("img_Pil: image = " + str(image_pil))
         image2_np = image2.image_depth
-        # logging.infO("img_Pil:Depth = " + str(image_pil))
-        image2_np = image2_np[100:150, len(image2_np) - 50: len(image2_np) + 50]
-        # image2_np = np.log(image2_np)
-        image2_np = np.clip(image2_np, 0, 40)
-        min, max = np.min(image2_np), np.max(image2_np)
         min, max = 0, 40
         normalized_image = (image2_np) / (max - min)
         normalized_image = (normalized_image * 255).astype(np.uint8)
         image2_pil = Image.fromarray(normalized_image, mode="L")
         # image2_pil = ImageOps.invert(image2_pil)
         if self.screen is None:
-            self.init_pygame(image_pil.width + image2_pil.width, image_pil.height)
-        mplstyle.use('fast')
+            self.init_pygame(image_pil.width, image_pil.height)
         depth_value = np.average(image2_np)
         intdp = int(depth_value)
-        depth_value_text = ImageDraw.Draw(image2_pil)
-        depth_value_text.text((2, 2), str(depth_value), fill=0)
         ticks = pygame.time.get_ticks()
         seconds = int(ticks / 1000)
-        resetSec = int((ticks / 1000) % 60)
-        logging.info("sec: " + str(seconds) + ", depth:" + str(intdp))
-        if seconds != self.preSec:
-            self.seconds_array.append(seconds)
-            self.depth_value_array.append(depth_value)
-            self.sameSecond_array = []
-        if seconds > 0 and seconds == self.seconds_array[-1]:
-            self.sameSecond_array.append(depth_value)
-            # print('dp appened')
-        if seconds > 0 and len(self.sameSecond_array) > 0:
-            self.sameSecond_array.sort()
-            print("same sec: " + str(self.sameSecond_array))
-            self.depth_value_array.append(self.sameSecond_array[0])
-            self.depth_value_array.append(self.sameSecond_array[-1])
-            self.seconds_array.append(seconds)
-            self.seconds_array.append(seconds)
-        # the code above lowk does not work
-        # debug code
-        # print("seconds arr:" + str(self.depth_value_array))
-        # print("value arr" + str(self.seconds_array))
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
         self.preSec = seconds
-        self.lines.set_xdata(display_sec_array)
-        self.lines.set_ydata(display_depth_array)
-        self.figure.canvas.draw_idle()
-        self.figure.canvas.flush_events()
-        plt.plot(display_sec_array, display_depth_array)
-        x_val = location.x
-        y_val = location.y
-        print(str(x_val) + " " + str(y_val))
         # if resetSec >= 60:
         #     plt.clf()
         plt.show(block=False)
@@ -129,9 +91,8 @@ class PyGameViewer2:
                 pygame.quit()
                 return None
 
-        combined_img_pil = Image.new('RGB', (image_pil.width + image2_pil.width, image_pil.height), (250, 250, 250))
+        combined_img_pil = Image.new('RGB', (image_pil.width, image_pil.height), (250, 250, 250))
         combined_img_pil.paste(image_pil, (0, 0))
-        combined_img_pil.paste(image2_pil, (image_pil.width, 0))
         # size = canvas.get_width_height()
         # surf = pygame.image.fromstring(raw_data, size , "RGB")
 
