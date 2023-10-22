@@ -31,7 +31,7 @@ async def main():
     carla_client = carla.Client('127.0.0.1', 2000)
     carla_client.set_timeout(5.0)
     roar_py_instance = roar_py_carla.RoarPyCarlaInstance(carla_client)
-    viewer = FullView()
+    viewer = PyGameViewer2()
 
     carla_world = roar_py_instance.world
     carla_world.set_asynchronous(True)
@@ -53,8 +53,8 @@ async def main():
         np.array([-0 * vehicle.bounding_box.extent[0], -10, 3 * vehicle.bounding_box.extent[2]]),
         # relative position
         np.array([0 , 0 / 180.0 * np.pi, 1.5]),  # relative rotation
-        image_width=1920,
-        image_height=1080
+        image_width=1024,
+        image_height=768
     )
     locaton = vehicle.attach_location_in_world_sensor(
         roar_py_interface.RoarPyLocationInWorldSensorData

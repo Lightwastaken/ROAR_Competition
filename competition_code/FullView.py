@@ -13,7 +13,6 @@ import matplotlib.style as mplstyle
 import time
 import transforms3d as tr3d
 import io
-import cv2
 import roar_py_interface
 import csv
 
