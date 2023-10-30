@@ -5,7 +5,7 @@ import carla
 import numpy as np
 import asyncio
 from typing import Dict, Any, List
-from checkpoints import checkpoints
+import time
 from Manual_Viewer import ManualControlViewerr
 from FullView import  FullView
 # from ROAR_Competition.competition_code.Beta_Viewer import Beta_Viewer
@@ -66,9 +66,8 @@ async def main():
         image_width=500,
         image_height=250
     )
-
-    checkpoint_display = checkpoints()
-
+    integral_error = 0
+    start_time = time.time()
     assert camera is not None
     try:
         while True:
@@ -84,20 +83,13 @@ async def main():
             depth_camera_data = await depth_camera.receive_observation()
             location_data = await locaton.receive_observation()
 
-            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points)
-            # If user clicked the close button, render_ret will be None
-            if render_ret is None:
-                break
-            depth_value = render_ret
+
             # Find the waypoint closest to the vehicle
             current_waypoint_idx = filter_waypoints(
                 vehicle_location,
                 current_waypoint_idx,
                 way_points
             )
-
-            checkpoint_display.update_checkpoints(location_data.x, location_data.y)
-
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
             waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
 
@@ -109,9 +101,23 @@ async def main():
             delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
             # Proportional controller to control the vehicle's speed towards 40 m/s
+            # error is always target - current
 
-            throttle_control = 0.175 * (20 - np.linalg.norm(vehicle.get_linear_3d_velocity()))
-
+            # error = 20 - vehicle.get_linear_3d_velocity
+            # throttle_control = kp * error
+            current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
+            target_speed = 20
+            error = target_speed - current_speed
+            iteration_time = start_time - time.time()
+            integral_error = integral_error + error * iteration_time
+            Kp = 0.05 #0.175
+            Ki = 0.01
+            throttle_control = Kp * error + Ki * integral_error
+            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed)
+            # If user clicked the close button, render_ret will be None
+            if render_ret is None:
+                break
+            depth_value = render_ret
             if depth_value < 25:
                 throttle_control = np.clip(throttle_control, 0, 0.4)
             elif 30 > depth_value > 25:
@@ -132,8 +138,10 @@ async def main():
             # Proportional controller to steer the vehicle towards the target waypoint
             steer_control = (
                     steer_value / np.sqrt(np.linalg.norm(vehicle.get_linear_3d_velocity())) * delta_heading / np.pi
-            ) if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
+            )\
+                if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
             steer_control = np.clip(steer_control, -1.0, 1.0)
+
 
             control = {
                 "throttle": np.clip(throttle_control, 0.0, 1.0),
