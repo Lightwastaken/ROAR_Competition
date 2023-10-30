@@ -6,6 +6,7 @@ import numpy as np
 import asyncio
 from typing import Dict, Any, List
 import time
+from checkpoints import checkpoints
 from Manual_Viewer import ManualControlViewerr
 from FullView import  FullView
 # from ROAR_Competition.competition_code.Beta_Viewer import Beta_Viewer
@@ -48,6 +49,8 @@ async def main():
     # Initialize current waypoint index to 10 since that's where we spawned the vehicle
     current_waypoint_idx = 10
 
+    #checkpoint
+    checkpoint_display = checkpoints()
     assert vehicle is not None
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,  # Specify what kind of data you want to receive
@@ -83,7 +86,7 @@ async def main():
             depth_camera_data = await depth_camera.receive_observation()
             location_data = await locaton.receive_observation()
 
-
+            checkpoint_display.update_checkpoints(location_data.x, location_data.y)
             # Find the waypoint closest to the vehicle
             current_waypoint_idx = filter_waypoints(
                 vehicle_location,
