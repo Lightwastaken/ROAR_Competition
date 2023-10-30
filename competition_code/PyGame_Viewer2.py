@@ -32,7 +32,9 @@ class PyGameViewer2:
         self.figure = None
         self.screen = None
         self.clock = None
-
+        self.currentSpeedArray = None
+        self.TargetSpeedArray = None
+        self.sameSecondCurrentSpeedArray = None
     def init_pygame(self, x, y) -> None:
         pygame.init()
         self.screen = pygame.display.set_mode((x, y), pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -41,6 +43,9 @@ class PyGameViewer2:
         self.clock = pygame.time.Clock()
         self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
         self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
+        self.currentSpeedArray = []
+        self.TargetSpeedArray = []
+        self.sameSecondCurrentSpeedArray = []
         self.depth_value_array = []
         self.seconds_array = []
         self.sameSecond_array = []
@@ -48,7 +53,7 @@ class PyGameViewer2:
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2: roar_py_interface.RoarPyCameraSensorDataDepth,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints) -> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -80,32 +85,42 @@ class PyGameViewer2:
         if seconds != self.preSec:
             self.seconds_array.append(seconds)
             self.depth_value_array.append(depth_value)
+            self.currentSpeedArray.append(current_speed)
             self.sameSecond_array = []
         if seconds > 0 and seconds == self.seconds_array[-1]:
             self.sameSecond_array.append(depth_value)
+            self.sameSecondCurrentSpeedArray.append(current_speed)
             # print('dp appened')
         if seconds > 0 and len(self.sameSecond_array) > 0:
             self.sameSecond_array.sort()
+            self.sameSecondCurrentSpeedArray.sort()
             print("same sec: " + str(self.sameSecond_array))
             self.depth_value_array.append(self.sameSecond_array[0])
             self.depth_value_array.append(self.sameSecond_array[-1])
+            self.currentSpeedArray.append(self.sameSecondCurrentSpeedArray[0])
+            self.currentSpeedArray.append(self.sameSecondCurrentSpeedArray[-1])
             self.seconds_array.append(seconds)
             self.seconds_array.append(seconds)
         # the code above lowk does not work
+        # it basically tries to add the least and greatest value within a second to our array(which will be graphed) to help w/ performance
         # debug code
         # print("seconds arr:" + str(self.depth_value_array))
         # print("value arr" + str(self.seconds_array))
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
+        fig1 = plt.figure("Figure 1")
         self.preSec = seconds
         self.lines.set_xdata(display_sec_array)
         self.lines.set_ydata(display_depth_array)
+        plt.plot(display_sec_array, display_depth_array)
+        fig2 = plt.figure("figure 2")
+        self.lines.set_xdata(display_sec_array)
+        self.lines.set_ydata(self.currentSpeedArray)
         self.figure.canvas.draw_idle()
         self.figure.canvas.flush_events()
-        plt.plot(display_sec_array, display_depth_array)
-        x_val = location.x
-        y_val = location.y
-        print(str(x_val) + " " + str(y_val))
+        plt.plot(display_sec_array, self.currentSpeedArray)
+        # plt.plot(display_sec_array, target_speed)
+        # needs to be changed later if were changing target speed probably idk acutally wtvr
         # if resetSec >= 60:
         #     plt.clf()
         plt.show(block=False)
