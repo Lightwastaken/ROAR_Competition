@@ -71,6 +71,7 @@ class PyGameViewer2:
         normalized_image = (normalized_image * 255).astype(np.uint8)
         image2_pil = Image.fromarray(normalized_image, mode="L")
         # image2_pil = ImageOps.invert(image2_pil)
+        # jogn waas here
         if self.screen is None:
             self.init_pygame(image_pil.width + image2_pil.width, image_pil.height)
         mplstyle.use('fast')
