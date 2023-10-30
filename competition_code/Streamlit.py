@@ -36,11 +36,11 @@ class Streamlit:
             print("sec: " + str(self.arraysec))
             chart_data = pd.DataFrame(
                 {
-                    "col1": self.arraydepth,
-                    "col2": self.arraysec,
+                    "depth": self.arraydepth,
+                    "sec": self.arraysec,
                 }
             )
-            st.line_chart(chart_data, x="col1", y="col2", color=["#0000FF"])
+            st.line_chart(chart_data, x="sec", y="depth", color=["#0000FF"])
 
 
 streamStream = Streamlit()
