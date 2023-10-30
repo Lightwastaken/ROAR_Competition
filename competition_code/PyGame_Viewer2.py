@@ -114,8 +114,6 @@ class PyGameViewer2:
         self.lines.set_ydata(display_depth_array)
         plt.plot(display_sec_array, display_depth_array)
         fig2 = plt.figure("figure 2")
-        self.lines.set_xdata(display_sec_array)
-        self.lines.set_ydata(self.currentSpeedArray)
         self.figure.canvas.draw_idle()
         self.figure.canvas.flush_events()
         plt.plot(display_sec_array, self.currentSpeedArray)

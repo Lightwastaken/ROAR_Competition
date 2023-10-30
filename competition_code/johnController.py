@@ -111,7 +111,7 @@ async def main():
             iteration_time = start_time - time.time()
             integral_error = integral_error + error * iteration_time
             Kp = 0.05 #0.175
-            Ki = 0.01
+            Ki = 0
             throttle_control = Kp * error + Ki * integral_error
             render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed)
             # If user clicked the close button, render_ret will be None
