@@ -5,6 +5,7 @@ import carla
 import numpy as np
 import asyncio
 from typing import Dict, Any, List
+from checkpoints import checkpoints
 from Manual_Viewer import ManualControlViewerr
 from FullView import  FullView
 # from ROAR_Competition.competition_code.Beta_Viewer import Beta_Viewer
@@ -66,6 +67,8 @@ async def main():
         image_height=250
     )
 
+    checkpoint_display = checkpoints()
+
     assert camera is not None
     try:
         while True:
@@ -92,6 +95,9 @@ async def main():
                 current_waypoint_idx,
                 way_points
             )
+
+            checkpoint_display.update_checkpoints(location_data.x, location_data.y)
+
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
             waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
 
