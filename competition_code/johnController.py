@@ -48,7 +48,7 @@ async def main():
 
     # Initialize current waypoint index to 10 since that's where we spawned the vehicle
     current_waypoint_idx = 10
-
+#TEST
     #checkpoint
     checkpoint_display = checkpoints()
     assert vehicle is not None
