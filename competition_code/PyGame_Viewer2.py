@@ -109,7 +109,6 @@ class PyGameViewer2:
         # print("value arr" + str(self.seconds_array))
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
-        fig1 = plt.figure("Figure 1")
         self.preSec = seconds
         self.lines.set_xdata(display_sec_array)
         self.lines.set_ydata(display_depth_array)
