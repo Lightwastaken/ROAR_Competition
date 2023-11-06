@@ -43,6 +43,8 @@ class PyGameViewer2:
         self.clock = pygame.time.Clock()
         self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
         self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
+        # self.figure2, self.ax2 = plt.subplots(nrows=1, ncols=1)
+        # self.line2 = self.ax2.plot(1, 50, 'bo', markersize=3)[0]
         self.currentSpeedArray = []
         self.TargetSpeedArray = []
         self.sameSecondCurrentSpeedArray = []
@@ -53,7 +55,7 @@ class PyGameViewer2:
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2: roar_py_interface.RoarPyCameraSensorDataDepth,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed, graphnum)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -110,17 +112,21 @@ class PyGameViewer2:
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
         self.preSec = seconds
-        self.lines.set_xdata(display_sec_array)
-        self.lines.set_ydata(display_depth_array)
-        plt.plot(display_sec_array, display_depth_array)
-        fig2 = plt.figure("figure 2")
+        if graphnum == 1:
+            self.lines.set_xdata(display_sec_array)
+            self.lines.set_ydata(display_depth_array)
+            plt.plot(display_sec_array,display_depth_array)
+        if graphnum == 2:
+            self.lines.set_xdata(display_sec_array)
+            self.lines.set_ydata(self.currentSpeedArray)
+            plt.plot(display_sec_array, self.currentSpeedArray)
+
         self.figure.canvas.draw_idle()
         self.figure.canvas.flush_events()
-        plt.plot(display_sec_array, self.currentSpeedArray)
-        # plt.plot(display_sec_array, target_speed)
+
+
         # needs to be changed later if were changing target speed probably idk acutally wtvr
-        # if resetSec >= 60:
-        #     plt.clf()
+
         plt.show(block=False)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -138,6 +144,7 @@ class PyGameViewer2:
                 f.write('\n')
                 f.write('-----------------------------------------')
                 f.write('\n')
+                plt.close('all')
                 pygame.quit()
                 return None
 
@@ -158,3 +165,4 @@ class PyGameViewer2:
         pygame.display.flip()
         self.clock.tick(60)
         return depth_value
+
