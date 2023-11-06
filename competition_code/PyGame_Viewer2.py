@@ -21,7 +21,6 @@ import pyqtgraph as pg
 logging.basicConfig(level=logging.INFO)
 matplotlib.use("TkAgg")
 
-
 class GraphWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -69,9 +68,6 @@ class PyGameViewer2:
         self.app = QtWidgets.QApplication([])
         self.main = GraphWindow()
         self.main.show()
-
-
-
     def init_pygame(self, x, y) -> None:
         pygame.init()
         self.screen = pygame.display.set_mode((x, y), pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -90,7 +86,7 @@ class PyGameViewer2:
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2: roar_py_interface.RoarPyCameraSensorDataDepth,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed, graphnum)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -147,21 +143,16 @@ class PyGameViewer2:
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
         self.preSec = seconds
-        self.lines.set_xdata(display_sec_array)
-        self.lines.set_ydata(display_depth_array)
-        # plt.plot(display_sec_array, display_depth_array)
-        # fig2 = plt.figure("figure 2")
-        # self.lines.set_xdata(display_sec_array)
-        # self.lines.set_ydata(self.currentSpeedArray)
-        self.figure.canvas.draw_idle()
-        self.figure.canvas.flush_events()
-        # plt.plot(display_sec_array, self.currentSpeedArray)
-        # plt.plot(display_sec_array, target_speed)
-        # needs to be changed later if were changing target speed probably idk acutally wtvr
-        # if resetSec >= 60:
-        #     plt.clf()
+        if graphnum == 1:
+            self.lines.set_xdata(display_sec_array)
+            self.lines.set_ydata(display_depth_array)
+            plt.plot(display_sec_array, display_depth_array)
+        if graphnum == 2:
+            self.lines.set_xdata(display_sec_array)
+            self.lines.set_ydata(self.currentSpeedArray)
+            plt.plot(display_sec_array, self.currentSpeedArray)
         self.main.add_data(display_sec_array, display_depth_array)
-        self.main.add_data_line(display_sec_array, self.currentSpeedArray)  # absolutely no clue what this is plotting
+        self.main.add_data_line(display_sec_array, self.currentSpeedArray)
         plt.show(block=False)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -179,6 +170,7 @@ class PyGameViewer2:
                 f.write('\n')
                 f.write('-----------------------------------------')
                 f.write('\n')
+                plt.close('all')
                 pygame.quit()
                 return None
 
