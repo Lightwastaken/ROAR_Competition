@@ -57,17 +57,18 @@ async def main():
     assert vehicle is not None
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,  # Specify what kind of data you want to receive
-        np.array([-10, 0, 5 * vehicle.bounding_box.extent[2]]),  # relative position (behind the car)
-        np.array([0, 2.0 * np.pi, 0]),  # Rotation to face the car from behind
-        image_width = 1024,
-        image_height = 768,
+        np.array([-0 * vehicle.bounding_box.extent[0], -10, 3 * vehicle.bounding_box.extent[2]]),
+        # relative position
+        np.array([0 , 0 / 180.0 * np.pi, 1.5]),  # relative rotation
+        image_width=1024,
+        image_height=768
     )
     locaton = vehicle.attach_location_in_world_sensor(
         roar_py_interface.RoarPyLocationInWorldSensorData
     )
     depth_camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataDepth,
-        np.array([1.0 * vehicle.bounding_box.extent[0], 0, 1.0]),  # relative position
+        np.array([1.0 * vehicle.bounding_box.extent[0], 0.0, 1.0]),  # relative position
         np.array([0, 0 / 180.0 * np.pi, 0]),  # relative rotation
         image_width=500,
         image_height=250
