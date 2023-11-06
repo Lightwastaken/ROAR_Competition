@@ -24,30 +24,53 @@ matplotlib.use("TkAgg")
 class GraphWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        central_widget = QWidget()
+        central_widget.setFixedHeight(800)
+        central_widget.setFixedWidth(600)
+        self.setCentralWidget(central_widget)
+        self.move(1300, 100)
+        layout = QtWidgets.QVBoxLayout(central_widget)
+        depth_layout = QtWidgets.QHBoxLayout()
+        speed_layout = QtWidgets.QHBoxLayout()
+
         self.depth_graph = pg.PlotWidget()
-        self.setCentralWidget(self.depth_graph)
+        self.speed_graph = pg.PlotWidget()
+
+        depth_layout.addWidget(self.depth_graph)
+        speed_layout.addWidget(self.speed_graph)
+
+        layout.addLayout(depth_layout)
+        layout.addLayout(speed_layout)
+
         self.time_data = []
         self.depth_data = []
-        self.data_x = []
-        self.data_y = []
+        self.time_data2 = []
+        self.speed_data = []
+
         self.depth_graph.setBackground("w")
         self.depth_graph.setLabel("left", "Depth")
         self.depth_graph.setLabel("bottom", "Time (s)")
         self.depth_graph.setYRange(0, 40)
         pen = pg.mkPen(color=(255, 0, 0), width=3)
-        pen2 = pg.mkPen(color=(0,0,255), width=2)
-        self.depth_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
-        self.line = self.depth_graph.plot(self.data_x, self.data_y, pen=pen2)
 
-    def add_data(self,x,y):
+        self.speed_graph.setBackground("w")
+        self.speed_graph.setLabel("left", "Speed")
+        self.speed_graph.setLabel("bottom", "Time (s)")
+        self.speed_graph.setYRange(0, 40)
+        pen2 = pg.mkPen(color=(0, 0, 255), width=2)
+
+        self.depth_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
+        self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
+
+    def add_data_depth(self,x,y):
         self.time_data = x
         self.depth_data = y
         self.depth_line.setData(self.time_data, self.depth_data)
 
-    def add_data_line(self, x, y):
-        self.data_x = x
-        self.data_y = y
-        self.line.setData(self.data_x, self.data_y)
+    def add_data_speed(self, x, y):
+        self.time_data2 = x
+        self.speed_data = y
+        self.speed_line.setData(self.time_data2, self.speed_data)
 
 class PyGameViewer2:
     def __init__(
@@ -74,8 +97,8 @@ class PyGameViewer2:
         pygame.display.set_caption("RoarPy Viewer")
         pygame.key.set_repeat()
         self.clock = pygame.time.Clock()
-        self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
-        self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
+        # self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
+        # self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
         self.currentSpeedArray = []
         self.TargetSpeedArray = []
         self.sameSecondCurrentSpeedArray = []
@@ -107,7 +130,7 @@ class PyGameViewer2:
         # jogn waas here
         if self.screen is None:
             self.init_pygame(image_pil.width + image2_pil.width, image_pil.height)
-        mplstyle.use('fast')
+        # mplstyle.use('fast')
         depth_value = np.average(image2_np)
         intdp = int(depth_value)
         depth_value_text = ImageDraw.Draw(image2_pil)
@@ -143,16 +166,16 @@ class PyGameViewer2:
         display_sec_array = self.seconds_array
         display_depth_array = self.depth_value_array
         self.preSec = seconds
-        if graphnum == 1:
-            self.lines.set_xdata(display_sec_array)
-            self.lines.set_ydata(display_depth_array)
-            plt.plot(display_sec_array, display_depth_array)
-        if graphnum == 2:
-            self.lines.set_xdata(display_sec_array)
-            self.lines.set_ydata(self.currentSpeedArray)
-            plt.plot(display_sec_array, self.currentSpeedArray)
-        self.main.add_data(display_sec_array, display_depth_array)
-        self.main.add_data_line(display_sec_array, self.currentSpeedArray)
+        # if graphnum == 1:
+        #     self.lines.set_xdata(display_sec_array)
+        #     self.lines.set_ydata(display_depth_array)
+        #     plt.plot(display_sec_array, display_depth_array)
+        # if graphnum == 2:
+        #     self.lines.set_xdata(display_sec_array)
+        #     self.lines.set_ydata(self.currentSpeedArray)
+        #     plt.plot(display_sec_array, self.currentSpeedArray)
+        self.main.add_data_depth(display_sec_array, display_depth_array)
+        self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
         plt.show(block=False)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
