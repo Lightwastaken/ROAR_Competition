@@ -57,9 +57,9 @@ async def main():
     assert vehicle is not None
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,  # Specify what kind of data you want to receive
-        np.array([-0 * vehicle.bounding_box.extent[0], -10, 3 * vehicle.bounding_box.extent[2]]),
+        np.array([-2.0 * vehicle.bounding_box.extent[0], 0.0, 3.0 * vehicle.bounding_box.extent[2]]),
         # relative position
-        np.array([0 , 0 / 180.0 * np.pi, 1.5]),  # relative rotation
+        np.array([0, 10 / 180.0 * np.pi, 0]),  # relative rotation
         image_width=1024,
         image_height=768
     )
@@ -120,7 +120,7 @@ async def main():
             iteration_time = time.time() - start_time
             integral_error = integral_error + error * iteration_time
             Kp = 0.05
-            Ki = 0
+            Ki = 0.015
             graphnum = 2
             throttle_control = Kp * error + Ki * integral_error
             # logging.info("Current ")
