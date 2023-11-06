@@ -1,4 +1,4 @@
-from PyGame_Viewer2 import PyGameViewer2
+from PyGame_Viewer2 import PyGameViewer2, GraphWindow
 import roar_py_carla
 import roar_py_interface
 import carla
@@ -86,7 +86,9 @@ async def main():
             depth_camera_data = await depth_camera.receive_observation()
             location_data = await locaton.receive_observation()
 
+            # updates checkpoint times
             checkpoint_display.update_checkpoints(location_data.x, location_data.y)
+
             # Find the waypoint closest to the vehicle
             current_waypoint_idx = filter_waypoints(
                 vehicle_location,
