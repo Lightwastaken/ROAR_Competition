@@ -25,10 +25,10 @@ class GraphWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         central_widget = QWidget()
-        central_widget.setFixedHeight(800)
-        central_widget.setFixedWidth(600)
+        central_widget.setFixedHeight(700)
+        central_widget.setFixedWidth(500)
         self.setCentralWidget(central_widget)
-        self.move(1300, 100)
+        self.move(0, 0)
         layout = QtWidgets.QVBoxLayout(central_widget)
         depth_layout = QtWidgets.QHBoxLayout()
         speed_layout = QtWidgets.QHBoxLayout()
@@ -63,13 +63,13 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
 
     def add_data_depth(self,x,y):
-        self.time_data = x
-        self.depth_data = y
+        self.time_data = x[:-1]
+        self.depth_data = y[:-1]
         self.depth_line.setData(self.time_data, self.depth_data)
 
     def add_data_speed(self, x, y):
-        self.time_data2 = x
-        self.speed_data = y
+        self.time_data2 = x[:-1]
+        self.speed_data = y[:-1]
         self.speed_line.setData(self.time_data2, self.speed_data)
 
 class PyGameViewer2:
@@ -109,6 +109,7 @@ class PyGameViewer2:
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2: roar_py_interface.RoarPyCameraSensorDataDepth,
+               occupancy_map: Image,
                location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed, graphnum)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
@@ -126,10 +127,11 @@ class PyGameViewer2:
         normalized_image = (image2_np) / (max - min)
         normalized_image = (normalized_image * 255).astype(np.uint8)
         image2_pil = Image.fromarray(normalized_image, mode="L")
+        occupancy_map_rgb = occupancy_map.convert("RGB") if occupancy_map is not None else None
         # image2_pil = ImageOps.invert(image2_pil)
         # jogn waas here
         if self.screen is None:
-            self.init_pygame(image_pil.width + image2_pil.width, image_pil.height)
+            self.init_pygame(image_pil.width + image2_pil.width + occupancy_map.width, image_pil.height)
         # mplstyle.use('fast')
         depth_value = np.average(image2_np)
         intdp = int(depth_value)
@@ -176,9 +178,10 @@ class PyGameViewer2:
         #     plt.plot(display_sec_array, self.currentSpeedArray)
         self.main.add_data_depth(display_sec_array, display_depth_array)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
-        plt.show(block=False)
+        #plt.show(block=False)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self.main.close()
                 f = open('testlogs.txt', 'a+')
                 try:
                     contents = f.readlines()
@@ -193,22 +196,28 @@ class PyGameViewer2:
                 f.write('\n')
                 f.write('-----------------------------------------')
                 f.write('\n')
-                plt.close('all')
+                # plt.close('all')
                 pygame.quit()
                 return None
 
-        combined_img_pil = Image.new('RGB', (image_pil.width + image2_pil.width, image_pil.height), (250, 250, 250))
+        combined_img_pil = Image.new('RGB', (image_pil.width + image2_pil.width + occupancy_map.width, image_pil.height), (250, 250, 250))
         combined_img_pil.paste(image_pil, (0, 0))
         combined_img_pil.paste(image2_pil, (image_pil.width, 0))
+        combined_img_pil.paste(occupancy_map, (image_pil.width + image2_pil.width, 0))
         # size = canvas.get_width_height()
         # surf = pygame.image.fromstring(raw_data, size , "RGB")
 
         # combined_img_pil.paste(im,(image_pil.width,image2_pil.height))
         image_surface = pygame.image.fromstring(combined_img_pil.tobytes(), combined_img_pil.size,
                                                 combined_img_pil.mode).convert()
+
+        # if occupancy_map_rgb is not None:
+        #     occupancy_map_surface = pygame.image.fromstring(occupancy_map_rgb.tobytes(), occupancy_map_rgb.size, occupancy_map_rgb.mode).convert()
         self.screen.fill((0, 0, 0))
 
         self.screen.blit(image_surface, (0, 0))
+        # if occupancy_map_rgb is not None:
+        #     self.screen.blit(occupancy_map_surface, (image_pil.width, 0))
         # self.screen.blit(surf, (image_pil.width, image2_pil.height))
 
         pygame.display.flip()
