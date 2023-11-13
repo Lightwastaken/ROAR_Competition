@@ -1,5 +1,3 @@
-import logging
-
 from PyGame_Viewer2 import PyGameViewer2
 import roar_py_carla
 import roar_py_interface
@@ -40,8 +38,7 @@ async def main():
     carla_world = roar_py_instance.world
     carla_world.set_asynchronous(True)
     carla_world.set_control_steps(0.0, 0.01)
-    await carla_world.step()
-    # roar_py_instance.clean_actors_not_registered()
+
     way_points = carla_world.maneuverable_waypoints
     vehicle = carla_world.spawn_vehicle(
         "vehicle.dallara.dallara",
@@ -76,8 +73,6 @@ async def main():
     integral_error = 0
     start_time = time.time()
     assert camera is not None
-    assert locaton is not  None
-    assert  depth_camera is not None
     try:
         while True:
             # Step the world first
@@ -117,18 +112,12 @@ async def main():
             current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
             target_speed = 20
             error = target_speed - current_speed
-            iteration_time = time.time() - start_time
+            iteration_time = start_time - time.time()
             integral_error = integral_error + error * iteration_time
-            Kp = 0.05
+            Kp = 0.05 #0.175
             Ki = 0
-            graphnum = 2
             throttle_control = Kp * error + Ki * integral_error
-            # logging.info("Current ")
-            logging.info("ERROR: " + str(error))
-            logging.info("ITERATION TIME: " + str(iteration_time))
-            logging.info("TOTAL KI VAL: " + str(Ki * integral_error))
-            logging.info("Thorttle Control: " + str(throttle_control))
-            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed, graphnum)
+            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed)
             # If user clicked the close button, render_ret will be None
             if render_ret is None:
                 break
@@ -156,7 +145,7 @@ async def main():
             )\
                 if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
             steer_control = np.clip(steer_control, -1.0, 1.0)
-            logging.info("Steer control: " + str(steer_control))
+
 
             control = {
                 "throttle": np.clip(throttle_control, 0.0, 1.0),
@@ -168,7 +157,6 @@ async def main():
             }
             await vehicle.apply_action(control)
     finally:
-        vehicle.close()
         roar_py_instance.close()
 
 

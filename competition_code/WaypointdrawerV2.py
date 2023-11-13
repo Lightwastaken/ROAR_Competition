@@ -26,7 +26,7 @@ async def main():
     roar_py_instance.close()
     waypoints = waypoints[::30]
     i = 1
-    color = 'red'
+    color = 'blue'
     with plt.ion():
         for waypoint in (waypoints[:] if waypoints is not None else []):
             rep_line = waypoint.line_representation
