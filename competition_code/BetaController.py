@@ -37,7 +37,9 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
-        self.integral_error = None
+        self.steer_ingergeral_prior = None
+        self.error_prior = None
+        self.integral_prior = None
         self.start_time = None
         self.maneuverable_waypoints = maneuverable_waypoints
         self.vehicle = vehicle
@@ -52,7 +54,9 @@ class RoarCompetitionSolution_MAIN:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
         self.start_time = time.time()
-        self.integral_error = 0
+        self.integral_prior = 0
+        self.error_prior = 0
+        self.steer_ingergeral_prior = 0
         # Receive location, rotation and velocity data
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
@@ -87,9 +91,9 @@ class RoarCompetitionSolution_MAIN:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
-        # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
+        # We use the 10th waypoint ahead of the current waypoint as the target waypoint
         waypoint_to_follow = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + 5) % len(self.maneuverable_waypoints)]
+            (self.current_waypoint_idx + 30) % len(self.maneuverable_waypoints)]
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -99,21 +103,34 @@ class RoarCompetitionSolution_MAIN:
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
 
         # Proportional controller to steer the vehicle towards the target waypoint
+        error = delta_heading / np.pi
+        Skp = -40
+        Ski = 0.00
+        steer_intergeral = self.steer_ingergeral_prior + error
+        Sensitivity = np.sqrt(vehicle_velocity_norm)
         steer_control = (
-                -8.0 / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi
+                Skp / Sensitivity * error + (Ski / Sensitivity) * steer_intergeral
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
+        print("sterr control" + str(steer_control))
+        self.steer_ingergeral_prior = steer_intergeral
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        Kp = 0.08
-        Ki = 0.00
-        target_speed = 30
+        Kp = 0.015
+        Ki = 0.02
+        Kd = 0
+        target_speed = 60
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
+        derivative = error - self.error_prior
         iteration_time = time.time() - self.start_time
-        self.integral_error = self.integral_error + error * iteration_time
-        throttle_control = Kp * error + Ki * self.integral_error
+        integral = self.integral_prior + error
+        throttle_control = Kp * error + Ki * integral + Kd * derivative
+        # apply anti-windup???
+
         print(vehicle_velocity_norm)
+        self.error_prior = error
+        self.integral_prior = integral
 
         control = {
             "throttle": np.clip(throttle_control, 0.0, 1.0),
