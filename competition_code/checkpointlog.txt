@@ -209,6 +209,7 @@ attempt: 0~
 Lap 1: 0; 
 -------------------------------------
 attempt: 0~
+<<<<<<< HEAD
 Lap 1: 0; 
 ---------------------------------------
 
@@ -220,6 +221,12 @@ Lap 1: 0;
 -------------------------------------
 attempt: 0~
 Lap 1: 0; checkpoint 1: 57; 
+=======
+Lap 1: 0; checkpoint 1: 57; 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> main
 ---------------------------------------
 
 -------------------------------------
@@ -349,6 +356,7 @@ Lap 1: 0;
 
 -------------------------------------
 attempt: 0~
+<<<<<<< HEAD
 Lap 1: 0; checkpoint 1: 31; checkpoint 2: 65; checkpoint 3: 85; checkpoint 4: 101; checkpoint 5: 150; checkpoint 6: 162; checkpoint 7: 211; checkpoint 8: 236; checkpoint 9: 281; 
 Lap 2: 301; checkpoint 1: 323; checkpoint 2: 354; checkpoint 3: 374; checkpoint 4: 388; checkpoint 5: 435; checkpoint 6: 448; checkpoint 7: 496; checkpoint 8: 521; checkpoint 9: 567; 
 Lap 3: 584; checkpoint 1: 607; checkpoint 2: 638; checkpoint 3: 657; checkpoint 4: 671; checkpoint 5: 718; checkpoint 6: 732; checkpoint 7: 777; checkpoint 8: 805; checkpoint 9: 850; Total time: 866
@@ -490,3 +498,8 @@ Lap 1: 0; checkpoint 1: 31; checkpoint 2: 67; checkpoint 3: 87; checkpoint 4: 10
 attempt: 0~
 Lap 1: 0; checkpoint 1: 32; checkpoint 2: 66; checkpoint 3: 86; checkpoint 4: 102; checkpoint 5: 151; checkpoint 6: 164; checkpoint 7: 212; checkpoint 8: 231; checkpoint 9: 282; 
 Lap 2: 301; checkpoint 1: 324; checkpoint 2: 354; checkpoint 3: 374; checkpoint 4: 388; checkpoint 5: 436; checkpoint 6: 448; 
+=======
+Lap 1: 0; checkpoint 1: 31; checkpoint 2: 65; checkpoint 3: 86; checkpoint 4: 101; checkpoint 5: 149; checkpoint 6: 161; checkpoint 7: 210; checkpoint 8: 235; checkpoint 9: 280; 
+---------------------------------------
+>>>>>>> Stashed changes
+>>>>>>> main
