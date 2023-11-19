@@ -120,7 +120,7 @@ async def evaluate_solution(
         enable_visualization: bool = False,
 ) -> Optional[Dict[str, Any]]:
     if enable_visualization:
-        viewer = ManualControlViewer()
+        viewer = PyGameViewer2()
 
     # Spawn vehicle and sensors to receive data
     waypoints = world.maneuverable_waypoints
@@ -139,13 +139,21 @@ async def evaluate_solution(
         image_width=1024,
         image_height=768
     )
+    depth_camera = vehicle.attach_camera_sensor(
+        roar_py_interface.RoarPyCameraSensorDataDepth,
+        np.array([1.0 * vehicle.bounding_box.extent[0], 0.0, 1.0]),  # relative position
+        np.array([0, 0 / 180.0 * np.pi, 0]),  # relative rotation
+        image_width=500,
+        image_height=250
+    )
+
     location_sensor = vehicle.attach_location_in_world_sensor()
     velocity_sensor = vehicle.attach_velocimeter_sensor()
     rpy_sensor = vehicle.attach_roll_pitch_yaw_sensor()
     occupancy_map_sensor = vehicle.attach_occupancy_map_sensor(
-        50,
-        50,
-        2.0,
+        200,
+        200,
+        20.0,
         2.0
     )
     collision_sensor = vehicle.attach_collision_sensor(
@@ -210,7 +218,10 @@ async def evaluate_solution(
             break
 
         if enable_visualization:
-            if viewer.render(camera.get_last_observation()) is None:
+            occupancy_map = occupancy_map_sensor.producer.plot_occupancy_map(vehicle.get_3d_location()[:2],
+                                                                             vehicle.get_roll_pitch_yaw()[2])
+            current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
+            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed) is None:
                 vehicle.close()
                 return None
 
