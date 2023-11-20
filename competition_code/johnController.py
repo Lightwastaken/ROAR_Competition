@@ -1,3 +1,5 @@
+import math
+
 from PyGame_Viewer2 import PyGameViewer2
 import roar_py_carla
 import roar_py_interface
@@ -48,7 +50,7 @@ async def main():
 
     # Initialize current waypoint index to 10 since that's where we spawned the vehicle
     current_waypoint_idx = 10
-#TEST
+
     #checkpoint
     checkpoint_display = checkpoints()
     assert vehicle is not None
@@ -96,7 +98,6 @@ async def main():
             )
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
             waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
-
             # Calculate delta vector towards the target waypoint
             vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
             heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
@@ -122,13 +123,13 @@ async def main():
             if render_ret is None:
                 break
             depth_value = render_ret
-            if depth_value < 25:
+            if depth_value < 30:
                 throttle_control = np.clip(throttle_control, 0, 0.4)
-            elif 30 > depth_value > 25:
+            elif 25 > depth_value > 30:
                 throttle_control = np.clip(throttle_control, 0, 0.5)
-            elif 35 > depth_value > 30:
-                throttle_control = np.clip(throttle_control, 0, 0.7)
             elif 40 > depth_value > 35:
+                throttle_control = np.clip(throttle_control, 0, 0.7)
+            elif 45 > depth_value > 40:
                 throttle_control = np.clip(throttle_control, 0, 0.9)
 
             # use the throttle control to define the aggressiveness of the steer control
@@ -140,13 +141,22 @@ async def main():
             elif throttle_control > 0.8:
                 steer_value = -2.0
             # Proportional controller to steer the vehicle towards the target waypoint
-            steer_control = (
-                    steer_value / np.sqrt(np.linalg.norm(vehicle.get_linear_3d_velocity())) * delta_heading / np.pi
-            )\
+            steer_control = (steer_value / np.sqrt(np.linalg.norm(vehicle.get_linear_3d_velocity())) * delta_heading / np.pi)\
                 if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
+            print(steer_control)
             steer_control = np.clip(steer_control, -1.0, 1.0)
 
+            throttle_control=.01
 
+#            sharp turn thing? stolen from program
+            waypoint_to_turn = way_points[(current_waypoint_idx + 30) % len(way_points)]
+            vector_to_turn = (waypoint_to_turn.location - vehicle_location)[:2]
+            heading_to_turn = math.atan(vector_to_turn[1]/vector_to_turn[0])
+            turn_angle = heading_to_turn #(idk what this does) normalize_rad(heading_to_turn - vehicle_rotation[2])
+            print(turn_angle,heading_to_turn)
+            if abs(turn_angle) <= .5:
+                #do turn stuff
+                print('sharp turn')
             control = {
                 "throttle": np.clip(throttle_control, 0.0, 1.0),
                 "steer": steer_control,
