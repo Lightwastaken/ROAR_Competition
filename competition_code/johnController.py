@@ -1,5 +1,3 @@
-import math
-
 from PyGame_Viewer2 import PyGameViewer2
 import roar_py_carla
 import roar_py_interface
@@ -40,7 +38,8 @@ async def main():
     carla_world = roar_py_instance.world
     carla_world.set_asynchronous(True)
     carla_world.set_control_steps(0.0, 0.01)
-
+    await carla_world.step()
+    # roar_py_instance.clean_actors_not_registered()
     way_points = carla_world.maneuverable_waypoints
     vehicle = carla_world.spawn_vehicle(
         "vehicle.dallara.dallara",
@@ -75,6 +74,8 @@ async def main():
     integral_error = 0
     start_time = time.time()
     assert camera is not None
+    assert locaton is not  None
+    assert  depth_camera is not None
     try:
         while True:
             # Step the world first
@@ -97,7 +98,8 @@ async def main():
                 way_points
             )
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-            waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
+            waypoint_to_follow = way_points[(current_waypoint_idx + 3) % len(way_points)]
+
             # Calculate delta vector towards the target waypoint
             vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
             heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
@@ -113,12 +115,18 @@ async def main():
             current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
             target_speed = 20
             error = target_speed - current_speed
-            iteration_time = start_time - time.time()
+            iteration_time = time.time() - start_time
             integral_error = integral_error + error * iteration_time
-            Kp = 0.05 #0.175
+            Kp = 0.05
             Ki = 0
+            graphnum = 2
             throttle_control = Kp * error + Ki * integral_error
-            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed)
+            # logging.info("Current ")
+            logging.info("ERROR: " + str(error))
+            logging.info("ITERATION TIME: " + str(iteration_time))
+            logging.info("TOTAL KI VAL: " + str(Ki * integral_error))
+            logging.info("Thorttle Control: " + str(throttle_control))
+            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed, graphnum)
             # If user clicked the close button, render_ret will be None
             if render_ret is None:
                 break
@@ -145,18 +153,8 @@ async def main():
                 if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
             print(steer_control)
             steer_control = np.clip(steer_control, -1.0, 1.0)
+            logging.info("Steer control: " + str(steer_control))
 
-            throttle_control=.01
-
-#            sharp turn thing? stolen from program
-            waypoint_to_turn = way_points[(current_waypoint_idx + 30) % len(way_points)]
-            vector_to_turn = (waypoint_to_turn.location - vehicle_location)[:2]
-            heading_to_turn = math.atan(vector_to_turn[1]/vector_to_turn[0])
-            turn_angle = heading_to_turn #(idk what this does) normalize_rad(heading_to_turn - vehicle_rotation[2])
-            print(turn_angle,heading_to_turn)
-            if abs(turn_angle) <= .5:
-                #do turn stuff
-                print('sharp turn')
             control = {
                 "throttle": np.clip(throttle_control, 0.0, 1.0),
                 "steer": steer_control,
@@ -167,6 +165,7 @@ async def main():
             }
             await vehicle.apply_action(control)
     finally:
+        vehicle.close()
         roar_py_instance.close()
 
 
