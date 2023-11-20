@@ -154,7 +154,7 @@ async def evaluate_solution(
         200,
         200,
         20.0,
-        2.0
+        5.0
     )
     collision_sensor = vehicle.attach_collision_sensor(
         np.zeros(3),
