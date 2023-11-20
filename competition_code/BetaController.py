@@ -120,7 +120,7 @@ class RoarCompetitionSolution_MAIN:
         self.steer_ingergeral_prior = steer_intergeral
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        Kp = 0.035
+        Kp = 0.040
         Ki = 0.00002
         Kd = 0
         target_speed = 30
