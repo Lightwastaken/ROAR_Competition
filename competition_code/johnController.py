@@ -104,7 +104,7 @@ async def main():
                 way_points
             )
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-            waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
+            waypoint_to_follow = way_points[(current_waypoint_idx + 3) % len(way_points)]
 
             # Calculate delta vector towards the target waypoint
             vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
