@@ -178,11 +178,8 @@ class PyGameViewer2:
         #     plt.plot(display_sec_array, self.currentSpeedArray)
         self.main.add_data_depth(display_sec_array, display_depth_array)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
-<<<<<<< HEAD
         #plt.show(block=False)
-=======
         plt.show(block=False)
->>>>>>> main
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.main.close()
