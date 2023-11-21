@@ -56,7 +56,7 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.speed_graph.setBackground("w")
         self.speed_graph.setLabel("left", "Speed")
         self.speed_graph.setLabel("bottom", "Time (s)")
-        self.speed_graph.setYRange(0, 40)
+        # self.speed_graph.setYRange(0, 40)
         pen2 = pg.mkPen(color=(0, 0, 255), width=2)
 
         self.depth_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
@@ -108,9 +108,9 @@ class PyGameViewer2:
         self.preSec = 0
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
-               image2: roar_py_interface.RoarPyCameraSensorDataDepth,
+               image2,
                occupancy_map: Image,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed, graphnum)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -178,7 +178,11 @@ class PyGameViewer2:
         #     plt.plot(display_sec_array, self.currentSpeedArray)
         self.main.add_data_depth(display_sec_array, display_depth_array)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
+
         #plt.show(block=False)
+
+        # plt.show(block=False)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.main.close()
