@@ -157,7 +157,7 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        target_speed = 100
+        target_speed = 40
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior)
