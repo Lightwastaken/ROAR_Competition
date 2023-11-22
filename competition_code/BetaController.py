@@ -107,7 +107,7 @@ class RoarCompetitionSolution_MAIN:
         steererror = delta_heading / np.pi
         iteration_time = time.time() - self.start_time
         Skp = -8.0
-        Ski = 0.000
+        Ski = 0.0002
         Skd = 0
         steer_intergeral = self.steer_ingergeral_prior + steererror
         steer_derivative = (steererror - self.steer_error_prior)
@@ -120,8 +120,8 @@ class RoarCompetitionSolution_MAIN:
         self.steer_ingergeral_prior = steer_intergeral
 
         # Proportional controller to control the vehicle's speed towards 40 m/s
-        Kp = 0.040
-        Ki = 0.00002
+        Kp = 0.08
+        Ki = 0
         Kd = 0
         target_speed = 30
         current_speed = vehicle_velocity_norm
