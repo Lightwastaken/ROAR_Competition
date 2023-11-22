@@ -106,14 +106,17 @@ class RoarCompetitionSolution_MAIN:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
-        # We use the 10th waypoint ahead of the current waypoint as the target waypoint
-        waypoint_to_follow = self.maneuverable_waypoints[(self.current_waypoint_idx + 3) % len(self.maneuverable_waypoints)]
+        # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
+        waypoint_to_follow = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 3) % len(self.maneuverable_waypoints)]
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
+        print(vehicle_rotation[2])
+        print(heading_to_waypoint)
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
         curr_Speed = (int(vehicle_velocity_norm))
         # appending our current speed in an array with all the speed boundaries in PID config
@@ -146,14 +149,15 @@ class RoarCompetitionSolution_MAIN:
         Sensitivity = np.sqrt(vehicle_velocity_norm)
 
         steer_control = (
-                Skp / Sensitivity * delta_heading / np.pi + (Ski * steer_integral/ Sensitivity) * steer_integral + (Skd * steer_derivative/Sensitivity)
+                Skp / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi + (Ski * steer_integral) + (Skd * steer_derivative)
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
         print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
+        self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        target_speed = 30
+        target_speed = 100
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior)
@@ -162,7 +166,7 @@ class RoarCompetitionSolution_MAIN:
 
         # apply anti-windup???
 
-        print(vehicle_velocity_norm)
+        print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
         self.integral_prior = integral
 
