@@ -30,27 +30,27 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
         self.move(0, 0)
         layout = QtWidgets.QVBoxLayout(central_widget)
-        depth_layout = QtWidgets.QHBoxLayout()
         speed_layout = QtWidgets.QHBoxLayout()
-
-        self.depth_graph = pg.PlotWidget()
+        angle_layout = QtWidgets.QHBoxLayout()
+        self.angle_graph = pg.PlotWidget()
         self.speed_graph = pg.PlotWidget()
 
-        depth_layout.addWidget(self.depth_graph)
+        angle_layout.addWidget(self.angle_graph)
         speed_layout.addWidget(self.speed_graph)
 
-        layout.addLayout(depth_layout)
         layout.addLayout(speed_layout)
-
+        layout.addLayout(angle_layout)
+        self.current_angle = []
+        self.target_angle = []
         self.time_data = []
         self.depth_data = []
         self.time_data2 = []
         self.speed_data = []
 
-        self.depth_graph.setBackground("w")
-        self.depth_graph.setLabel("left", "Depth")
-        self.depth_graph.setLabel("bottom", "Time (s)")
-        self.depth_graph.setYRange(0, 40)
+        self.angle_graph.setBackground("w")
+        self.angle_graph.setLabel("left", "Angle")
+        self.angle_graph.setLabel("bottom", "Time (s)")
+        self.angle_graph.setYRange(0, 40)
         pen = pg.mkPen(color=(255, 0, 0), width=3)
 
         self.speed_graph.setBackground("w")
@@ -59,7 +59,7 @@ class GraphWindow(QtWidgets.QMainWindow):
         # self.speed_graph.setYRange(0, 40)
         pen2 = pg.mkPen(color=(0, 0, 255), width=2)
 
-        self.depth_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
+        self.angle_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
         self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
 
     def add_data_depth(self,x,y):
@@ -206,8 +206,8 @@ class PyGameViewer2:
 
         combined_img_pil = Image.new('RGB', (image_pil.width + image2_pil.width + occupancy_map.width, image_pil.height), (250, 250, 250))
         combined_img_pil.paste(image_pil, (0, 0))
-        combined_img_pil.paste(image2_pil, (image_pil.width, 0))
-        combined_img_pil.paste(occupancy_map, (image_pil.width + image2_pil.width, 0))
+        # combined_img_pil.paste(image2_pil, (image_pil.width, 0))
+        # combined_img_pil.paste(occupancy_map, (image_pil.width + image2_pil.width, 0))
         # size = canvas.get_width_height()
         # surf = pygame.image.fromstring(raw_data, size , "RGB")
 
