@@ -119,6 +119,7 @@ async def evaluate_solution(
         max_seconds=12000,
         enable_visualization: bool = False,
 ) -> Optional[Dict[str, Any]]:
+    global viewer
     if enable_visualization:
         viewer = PyGameViewer2()
 
@@ -221,6 +222,7 @@ async def evaluate_solution(
             occupancy_map = occupancy_map_sensor.producer.plot_occupancy_map(vehicle.get_3d_location()[:2],
                                                                              vehicle.get_roll_pitch_yaw()[2])
             current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
+
             if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed) is None:
                 vehicle.close()
                 return None
