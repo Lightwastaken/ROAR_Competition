@@ -123,6 +123,9 @@ async def main():
             await vehicle.apply_action(control)
     finally:
         roar_py_instance.close()
+        # yetet
+        print("hello")
+
 
 
 if __name__ == '__main__':
