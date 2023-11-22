@@ -30,36 +30,36 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
         self.move(0, 0)
         layout = QtWidgets.QVBoxLayout(central_widget)
-        depth_layout = QtWidgets.QHBoxLayout()
         speed_layout = QtWidgets.QHBoxLayout()
-
-        self.depth_graph = pg.PlotWidget()
+        angle_layout = QtWidgets.QHBoxLayout()
+        self.angle_graph = pg.PlotWidget()
         self.speed_graph = pg.PlotWidget()
 
-        depth_layout.addWidget(self.depth_graph)
+        angle_layout.addWidget(self.angle_graph)
         speed_layout.addWidget(self.speed_graph)
 
-        layout.addLayout(depth_layout)
         layout.addLayout(speed_layout)
-
+        layout.addLayout(angle_layout)
+        self.current_angle = []
+        self.target_angle = []
         self.time_data = []
         self.depth_data = []
         self.time_data2 = []
         self.speed_data = []
 
-        self.depth_graph.setBackground("w")
-        self.depth_graph.setLabel("left", "Depth")
-        self.depth_graph.setLabel("bottom", "Time (s)")
-        self.depth_graph.setYRange(0, 40)
+        self.angle_graph.setBackground("w")
+        self.angle_graph.setLabel("left", "Angle")
+        self.angle_graph.setLabel("bottom", "Time (s)")
+        self.angle_graph.setYRange(0, 40)
         pen = pg.mkPen(color=(255, 0, 0), width=3)
 
         self.speed_graph.setBackground("w")
         self.speed_graph.setLabel("left", "Speed")
         self.speed_graph.setLabel("bottom", "Time (s)")
-        self.speed_graph.setYRange(0, 40)
+        # self.speed_graph.setYRange(0, 40)
         pen2 = pg.mkPen(color=(0, 0, 255), width=2)
 
-        self.depth_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
+        self.angle_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
         self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
 
     def add_data_depth(self,x,y):
@@ -108,9 +108,9 @@ class PyGameViewer2:
         self.preSec = 0
 
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
-               image2: roar_py_interface.RoarPyCameraSensorDataDepth,
+               image2,
                occupancy_map: Image,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, target_speed, current_speed, graphnum)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -178,8 +178,11 @@ class PyGameViewer2:
         #     plt.plot(display_sec_array, self.currentSpeedArray)
         self.main.add_data_depth(display_sec_array, display_depth_array)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
+
         #plt.show(block=False)
-        plt.show(block=False)
+
+        # plt.show(block=False)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.main.close()
@@ -203,8 +206,8 @@ class PyGameViewer2:
 
         combined_img_pil = Image.new('RGB', (image_pil.width + image2_pil.width + occupancy_map.width, image_pil.height), (250, 250, 250))
         combined_img_pil.paste(image_pil, (0, 0))
-        combined_img_pil.paste(image2_pil, (image_pil.width, 0))
-        combined_img_pil.paste(occupancy_map, (image_pil.width + image2_pil.width, 0))
+        # combined_img_pil.paste(image2_pil, (image_pil.width, 0))
+        # combined_img_pil.paste(occupancy_map, (image_pil.width + image2_pil.width, 0))
         # size = canvas.get_width_height()
         # surf = pygame.image.fromstring(raw_data, size , "RGB")
 
