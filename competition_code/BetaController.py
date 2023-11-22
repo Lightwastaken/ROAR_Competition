@@ -7,6 +7,8 @@ from typing import List, Tuple, Dict, Optional
 import roar_py_interface
 import numpy as np
 import time
+import json
+import logging
 
 
 def normalize_rad(rad: float):
@@ -37,7 +39,10 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
-        self.steer_ingergeral_prior = None
+        self.data = None
+        self.K_val_thresholds = None
+        self.prev_key = None
+        self.steer_integral_error_prior = None
         self.steer_error_prior = None
         self.error_prior = None
         self.integral_prior = None
@@ -58,7 +63,15 @@ class RoarCompetitionSolution_MAIN:
         self.integral_prior = 0
         self.steer_error_prior = 0
         self.error_prior = 0
-        self.steer_ingergeral_prior = 0
+        self.steer_integral_error_prior = 0
+        self.prev_key = 14
+        self.K_val_thresholds = []
+        with open('PIDconfig.json') as json_file:
+            self.data = json.load(json_file)
+        controller_values = self.data["Throttle_Controller"]
+        for key in controller_values:
+            self.K_val_thresholds.append(int(key))
+
         # Receive location, rotation and velocity data
         vehicle_location = self.location_sensor.get_last_gym_observation()
         vehicle_rotation = self.rpy_sensor.get_last_gym_observation()
@@ -102,27 +115,44 @@ class RoarCompetitionSolution_MAIN:
 
         # Calculate delta angle towards the target waypoint
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
-
-        # Proportional controller to steer the vehicle towards the target waypoint
-        steererror = delta_heading / np.pi
+        curr_Speed = (int(vehicle_velocity_norm))
+        # appending our current speed in an array with all the speed boundaries in PID config
+        self.K_val_thresholds.append(curr_Speed)
+        # sort the array from least to greatest
+        self.K_val_thresholds.sort()
+        try:
+            # we are getting the K parameter's that is greater than our current speed by one
+            K_Values_Determinant = self.K_val_thresholds[self.K_val_thresholds.index(curr_Speed) + 1]
+        except:
+            # array overflow fix
+            K_Values_Determinant = self.K_val_thresholds[self.K_val_thresholds.index(curr_Speed)]
+        # setting K vals according to our determinant
+        K_Values_Determinant = str(K_Values_Determinant)
+        Skp = self.data["Steer_Controller"][K_Values_Determinant]["Kp"]
+        Ski = self.data["Steer_Controller"][K_Values_Determinant]["Ki"]
+        Skd = self.data["Steer_Controller"][K_Values_Determinant]["Kd"]
+        Kp = self.data["Throttle_Controller"][K_Values_Determinant]["Kp"]
+        Ki = self.data["Throttle_Controller"][K_Values_Determinant]["Ki"]
+        Kd = self.data["Throttle_Controller"][K_Values_Determinant]["Kd"]
+        print(K_Values_Determinant)
+        # we remove our current speed val, so we can reuse this algo
+        self.K_val_thresholds.remove(curr_Speed)
+        # Proportional controller to steer the vehicle towards the target waypoint, normal implementation
+        steer_error = delta_heading / np.pi
         iteration_time = time.time() - self.start_time
-        Skp = -8.0
-        Ski = 0.000
-        Skd = 0
-        steer_intergeral = self.steer_ingergeral_prior + steererror
-        steer_derivative = (steererror - self.steer_error_prior)
+        steer_integral = self.steer_integral_error_prior + steer_error
+        steer_derivative = (steer_error - self.steer_error_prior)
+        # square rooting the velocity makes it so that higher speed lower steer applied I think i chatgpted this
         Sensitivity = np.sqrt(vehicle_velocity_norm)
+
         steer_control = (
-                Skp / Sensitivity * delta_heading / np.pi + (Ski * steer_intergeral/ Sensitivity) * steer_intergeral + (Skd * steer_derivative/Sensitivity)
+                Skp / Sensitivity * delta_heading / np.pi + (Ski * steer_integral/ Sensitivity) * steer_integral + (Skd * steer_derivative/Sensitivity)
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
-        print("sterr control" + str(steer_control))
-        self.steer_ingergeral_prior = steer_intergeral
 
-        # Proportional controller to control the vehicle's speed towards 40 m/s
-        Kp = 0.035
-        Ki = 0.00002
-        Kd = 0
+        print("steer control" + str(steer_control))
+        self.steer_integral_error_prior = steer_integral
+        # normal implementation of throttle algo
         target_speed = 30
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
