@@ -115,7 +115,7 @@ class RoarCompetitionSolution_MAIN:
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
-        print(vehicle_rotation[2])
+        print("rotation"+ str(vehicle_rotation[2]))
         print(heading_to_waypoint)
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
         curr_Speed = (int(vehicle_velocity_norm))

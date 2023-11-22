@@ -43,6 +43,7 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.current_angle = []
         self.target_angle = []
         self.time_data = []
+        self.angle_data = []
         self.depth_data = []
         self.time_data2 = []
         self.speed_data = []
@@ -59,13 +60,13 @@ class GraphWindow(QtWidgets.QMainWindow):
         # self.speed_graph.setYRange(0, 40)
         pen2 = pg.mkPen(color=(0, 0, 255), width=2)
 
-        self.angle_line = self.depth_graph.plot(self.time_data, self.depth_data, pen=pen)
+        self.angle_line = self.angle_graph.plot(self.time_data, self.angle_data, pen=pen)
         self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
 
     def add_data_depth(self,x,y):
         self.time_data = x[:-1]
-        self.depth_data = y[:-1]
-        self.depth_line.setData(self.time_data, self.depth_data)
+        self.angle_data = y[:-1]
+        self.angle_line.setData(self.time_data, self.angle_data)
 
     def add_data_speed(self, x, y):
         self.time_data2 = x[:-1]
@@ -76,6 +77,7 @@ class PyGameViewer2:
     def __init__(
             self
     ):
+        self.currentHeadingArray = None
         self.ax = None
         self.sameSecond_array = None
         self.preSec = None
@@ -100,6 +102,7 @@ class PyGameViewer2:
         # self.figure, self.ax = plt.subplots(nrows=1, ncols=1)
         # self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
         self.currentSpeedArray = []
+        self.currentHeadingArray = []
         self.TargetSpeedArray = []
         self.sameSecondCurrentSpeedArray = []
         self.depth_value_array = []
@@ -110,7 +113,7 @@ class PyGameViewer2:
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2,
                occupancy_map: Image,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed, current_heading)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -141,27 +144,11 @@ class PyGameViewer2:
         seconds = int(ticks / 1000)
         resetSec = int((ticks / 1000) % 60)
         logging.info("sec: " + str(seconds) + ", depth:" + str(intdp))
-        if seconds != self.preSec:
-            self.seconds_array.append(seconds)
-            self.depth_value_array.append(depth_value)
-            self.currentSpeedArray.append(current_speed)
-            self.sameSecond_array = []
-        if seconds > 0 and seconds == self.seconds_array[-1]:
-            self.sameSecond_array.append(depth_value)
-            self.sameSecondCurrentSpeedArray.append(current_speed)
-            # print('dp appened')
-        if seconds > 0 and len(self.sameSecond_array) > 0:
-            self.sameSecond_array.sort()
-            self.sameSecondCurrentSpeedArray.sort()
-            print("same sec: " + str(self.sameSecond_array))
-            self.depth_value_array.append(self.sameSecond_array[0])
-            self.depth_value_array.append(self.sameSecond_array[-1])
-            self.currentSpeedArray.append(self.sameSecondCurrentSpeedArray[0])
-            self.currentSpeedArray.append(self.sameSecondCurrentSpeedArray[-1])
-            self.seconds_array.append(seconds)
-            self.seconds_array.append(seconds)
+
+        self.currentHeadingArray.append(current_heading)
+        self.currentSpeedArray.append(current_speed)
+        self.seconds_array.append(seconds)
         # the code above lowk does not work
-        # it basically tries to add the least and greatest value within a second to our array(which will be graphed) to help w/ performance
         # debug code
         # print("seconds arr:" + str(self.depth_value_array))
         # print("value arr" + str(self.seconds_array))
@@ -176,7 +163,8 @@ class PyGameViewer2:
         #     self.lines.set_xdata(display_sec_array)
         #     self.lines.set_ydata(self.currentSpeedArray)
         #     plt.plot(display_sec_array, self.currentSpeedArray)
-        self.main.add_data_depth(display_sec_array, display_depth_array)
+        print(self.currentHeadingArray)
+        self.main.add_data_depth(display_sec_array, self.currentHeadingArray)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
 
         #plt.show(block=False)
