@@ -44,6 +44,7 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.target_angle = []
         self.time_data = []
         self.angle_data = []
+        self.target_angle_data = []
         self.depth_data = []
         self.time_data2 = []
         self.speed_data = []
@@ -59,14 +60,22 @@ class GraphWindow(QtWidgets.QMainWindow):
         self.speed_graph.setLabel("bottom", "Time (s)")
         # self.speed_graph.setYRange(0, 40)
         pen2 = pg.mkPen(color=(0, 0, 255), width=2)
+        pen3 = pg.mkPen(color=(0, 255, 0), width=2)
+
 
         self.angle_line = self.angle_graph.plot(self.time_data, self.angle_data, pen=pen)
+        self.target_angle_line = self.angle_graph.plot(self.time_data, self.target_angle_data, pen = pen3)
         self.speed_line = self.speed_graph.plot(self.time_data2, self.speed_data, pen=pen2)
 
-    def add_data_depth(self,x,y):
+    def add_data_angle(self,x,y):
         self.time_data = x[:-1]
         self.angle_data = y[:-1]
         self.angle_line.setData(self.time_data, self.angle_data)
+
+    def add_data_targetangle(self, x, y):
+        self.time_data = x[:-1]
+        self.target_angle_data = y[:-1]
+        self.target_angle_line.setData(self.time_data, self.target_angle_data)
 
     def add_data_speed(self, x, y):
         self.time_data2 = x[:-1]
@@ -77,6 +86,7 @@ class PyGameViewer2:
     def __init__(
             self
     ):
+        self.TargetAngleArray = None
         self.currentHeadingArray = None
         self.ax = None
         self.sameSecond_array = None
@@ -103,6 +113,7 @@ class PyGameViewer2:
         # self.lines = self.ax.plot(1, 50, 'bo', markersize=3)[0]
         self.currentSpeedArray = []
         self.currentHeadingArray = []
+        self.TargetAngleArray = []
         self.TargetSpeedArray = []
         self.sameSecondCurrentSpeedArray = []
         self.depth_value_array = []
@@ -113,7 +124,7 @@ class PyGameViewer2:
     def render(self, image: roar_py_interface.RoarPyCameraSensorData,
                image2,
                occupancy_map: Image,
-               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed, current_heading)-> Optional[Dict[str, Any]]:
+               location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed, current_heading, target_heading)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
         image_pil = image.get_image()
@@ -144,7 +155,7 @@ class PyGameViewer2:
         seconds = int(ticks / 1000)
         resetSec = int((ticks / 1000) % 60)
         logging.info("sec: " + str(seconds) + ", depth:" + str(intdp))
-
+        self.TargetAngleArray.append(target_heading)
         self.currentHeadingArray.append(current_heading)
         self.currentSpeedArray.append(current_speed)
         self.seconds_array.append(seconds)
@@ -164,7 +175,8 @@ class PyGameViewer2:
         #     self.lines.set_ydata(self.currentSpeedArray)
         #     plt.plot(display_sec_array, self.currentSpeedArray)
         print(self.currentHeadingArray)
-        self.main.add_data_depth(display_sec_array, self.currentHeadingArray)
+        self.main.add_data_targetangle(display_sec_array, self.TargetAngleArray)
+        self.main.add_data_angle(display_sec_array, self.currentHeadingArray)
         self.main.add_data_speed(display_sec_array, self.currentSpeedArray)
 
         #plt.show(block=False)

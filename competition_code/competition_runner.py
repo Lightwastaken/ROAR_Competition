@@ -80,8 +80,13 @@ class RoarCompetitionRule:
 
         self.furthest_waypoints_index += min_index  # = new_furthest_index
         self._last_vehicle_location = current_location
+        waypoint_to_follow = self.waypoints[
+            (self.furthest_waypoints_index + 3) % len(self.waypoints)]
+        vector_to_waypoint = (waypoint_to_follow.location - current_location)[:2]
+        heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
         print(
             f"reach waypoints {self.furthest_waypoints_index} at {self.waypoints[self.furthest_waypoints_index].location}")
+        return heading_to_waypoint
 
     async def respawn(
             self
@@ -204,7 +209,7 @@ async def evaluate_solution(
         # receive sensors' data
         await vehicle.receive_observation()
 
-        await rule.tick()
+        target_heading = await rule.tick()
 
         # terminate if there is major collision
         collision_impulse_norm = np.linalg.norm(collision_sensor.get_last_observation().impulse_normal)
@@ -222,7 +227,7 @@ async def evaluate_solution(
                                                                              vehicle.get_roll_pitch_yaw()[2])
             heading = vehicle.get_roll_pitch_yaw()[2]
             current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
-            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed, heading) is None:
+            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed, heading, target_heading) is None:
                 vehicle.close()
                 return None
 
