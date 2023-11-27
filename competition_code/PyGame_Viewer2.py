@@ -18,6 +18,7 @@ import csv
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QWidget
 import pyqtgraph as pg
+from checkpoints import checkpoints
 logging.basicConfig(level=logging.INFO)
 matplotlib.use("TkAgg")
 
@@ -91,6 +92,7 @@ class PyGameViewer2:
         self.app = QtWidgets.QApplication([])
         self.main = GraphWindow()
         self.main.show()
+        self.checkpoint_display = checkpoints()
     def init_pygame(self, x, y) -> None:
         pygame.init()
         self.screen = pygame.display.set_mode((x, y), pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -113,6 +115,7 @@ class PyGameViewer2:
                location: roar_py_interface.RoarPyLocationInWorldSensorData, waypoints, current_speed)-> Optional[Dict[str, Any]]:
         # print(location)
         # print(waypoints)
+        # self.checkpoint_display.update_checkpoints(location.x, location.y)
         image_pil = image.get_image()
         # plt.rcParams["figure.figsize"] = [20, 20]
         # plt.figure(figsize=(50,50))
