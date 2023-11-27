@@ -1,3 +1,5 @@
+import logging
+
 from PyGame_Viewer2 import PyGameViewer2
 import roar_py_carla
 import roar_py_interface
@@ -38,7 +40,8 @@ async def main():
     carla_world = roar_py_instance.world
     carla_world.set_asynchronous(True)
     carla_world.set_control_steps(0.0, 0.01)
-
+    await carla_world.step()
+    # roar_py_instance.clean_actors_not_registered()
     way_points = carla_world.maneuverable_waypoints
     vehicle = carla_world.spawn_vehicle(
         "vehicle.dallara.dallara",
@@ -54,9 +57,9 @@ async def main():
     assert vehicle is not None
     camera = vehicle.attach_camera_sensor(
         roar_py_interface.RoarPyCameraSensorDataRGB,  # Specify what kind of data you want to receive
-        np.array([-0 * vehicle.bounding_box.extent[0], -10, 3 * vehicle.bounding_box.extent[2]]),
+        np.array([-2.0 * vehicle.bounding_box.extent[0], 0.0, 3.0 * vehicle.bounding_box.extent[2]]),
         # relative position
-        np.array([0 , 0 / 180.0 * np.pi, 1.5]),  # relative rotation
+        np.array([0, 10 / 180.0 * np.pi, 0]),  # relative rotation
         image_width=1024,
         image_height=768
     )
@@ -70,9 +73,13 @@ async def main():
         image_width=500,
         image_height=250
     )
+
+    occ_map_producer = roar_py_interface.RoarPyOccupancyMapProducer(carla_world.maneuverable_waypoints, 200, 200, 5, 5)
     integral_error = 0
     start_time = time.time()
     assert camera is not None
+    assert locaton is not  None
+    assert  depth_camera is not None
     try:
         while True:
             # Step the world first
@@ -88,6 +95,8 @@ async def main():
             location_data = await locaton.receive_observation()
 
             checkpoint_display.update_checkpoints(location_data.x, location_data.y)
+
+            occupancy_map = occ_map_producer.plot_occupancy_map(vehicle.get_3d_location()[:2], vehicle.get_roll_pitch_yaw()[2])
             # Find the waypoint closest to the vehicle
             current_waypoint_idx = filter_waypoints(
                 vehicle_location,
@@ -95,7 +104,7 @@ async def main():
                 way_points
             )
             # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
-            waypoint_to_follow = way_points[(current_waypoint_idx + 10) % len(way_points)]
+            waypoint_to_follow = way_points[(current_waypoint_idx + 3) % len(way_points)]
 
             # Calculate delta vector towards the target waypoint
             vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -112,12 +121,18 @@ async def main():
             current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
             target_speed = 20
             error = target_speed - current_speed
-            iteration_time = start_time - time.time()
+            iteration_time = time.time() - start_time
             integral_error = integral_error + error * iteration_time
-            Kp = 0.05 #0.175
-            Ki = 0
+            Kp = 0.05
+            Ki = 0.015
+            graphnum = 2
             throttle_control = Kp * error + Ki * integral_error
-            render_ret = viewer.render(camera_data, depth_camera_data, location_data, way_points, target_speed, current_speed)
+            # logging.info("Current ")
+            logging.info("ERROR: " + str(error))
+            logging.info("ITERATION TIME: " + str(iteration_time))
+            logging.info("TOTAL KI VAL: " + str(Ki * integral_error))
+            logging.info("Thorttle Control: " + str(throttle_control))
+            render_ret = viewer.render(camera_data, depth_camera_data, occupancy_map, location_data, way_points, target_speed, current_speed, graphnum)
             # If user clicked the close button, render_ret will be None
             if render_ret is None:
                 break
@@ -145,7 +160,7 @@ async def main():
             )\
                 if np.linalg.norm(vehicle.get_linear_3d_velocity()) > 1e-2 else -np.sign(delta_heading)
             steer_control = np.clip(steer_control, -1.0, 1.0)
-
+            logging.info("Steer control: " + str(steer_control))
 
             control = {
                 "throttle": np.clip(throttle_control, 0.0, 1.0),
@@ -157,6 +172,7 @@ async def main():
             }
             await vehicle.apply_action(control)
     finally:
+        vehicle.close()
         roar_py_instance.close()
 
 
