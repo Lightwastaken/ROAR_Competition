@@ -115,7 +115,7 @@ class RoarCompetitionSolution_MAIN:
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
-        print(vehicle_rotation[2])
+        print("rotation" + str(vehicle_rotation[2]))
         print(heading_to_waypoint)
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
         curr_Speed = (int(vehicle_velocity_norm))
@@ -149,7 +149,8 @@ class RoarCompetitionSolution_MAIN:
         Sensitivity = np.sqrt(vehicle_velocity_norm)
 
         steer_control = (
-                Skp / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi + (Ski * steer_integral) + (Skd * steer_derivative)
+                Skp / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi + (Ski * steer_integral) + (
+                    Skd * steer_derivative)
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
@@ -157,13 +158,26 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        target_speed = 40
+        target_speed = 30
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
-        derivative = (error - self.error_prior)
-        integral = self.integral_prior + error
+        derivative = (error - self.error_prior) / iteration_time
+        integral = self.integral_prior + error * iteration_time
+        i_value = Ki * integral
+        i_max = 1 / integral
+        i_min = 0
+        if integral > i_max and iteration_time > 10:
+            print("integral bounds hit:max")
+            integral = i_max
+        elif self.integral_prior < i_min:
+            print("integral bounds hit:min")
+            integral = i_min
+        if error != self.error_prior:
+            integral = 0
+
         throttle_control = Kp * error + Ki * integral + Kd * derivative
 
+        gear = max(1, (current_speed // 30))
         # apply anti-windup???
 
         print("speed: " + str(vehicle_velocity_norm))
@@ -176,7 +190,7 @@ class RoarCompetitionSolution_MAIN:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": 0.0,
             "reverse": 0,
-            "target_gear": 0
+            "target_gear": gear
         }
         await self.vehicle.apply_action(control)
         return control
