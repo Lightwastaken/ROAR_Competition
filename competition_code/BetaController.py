@@ -177,6 +177,7 @@ class RoarCompetitionSolution_MAIN:
 
         throttle_control = Kp * error + Ki * integral + Kd * derivative
 
+        gear = max(1, (current_speed // 30))
         # apply anti-windup???
 
         print("speed: " + str(vehicle_velocity_norm))
@@ -189,7 +190,7 @@ class RoarCompetitionSolution_MAIN:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": 0.0,
             "reverse": 0,
-            "target_gear": 0
+            "target_gear": gear
         }
         await self.vehicle.apply_action(control)
         return control
