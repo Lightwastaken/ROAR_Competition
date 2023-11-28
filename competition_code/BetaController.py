@@ -177,7 +177,20 @@ class RoarCompetitionSolution_MAIN:
 
         throttle_control = Kp * error + Ki * integral + Kd * derivative
 
+        # get the delta heading of a closer waypoint and slow car down if the difference is too large
+        close_way_point = waypoint_to_follow = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 2) % len(self.maneuverable_waypoints)]
+        vector_to_close_waypoint = (close_way_point.location - vehicle_location)[:2]
+        heading_to_close_waypoint = np.arctan2(vector_to_close_waypoint[1], vector_to_close_waypoint[0])
+        wide_error = normalize_rad(heading_to_close_waypoint - vehicle_rotation[2])
+        print("wide_error:", wide_error)
+        brake = 0
+        if abs(wide_error) > 0.07 and current_speed > 10:
+            throttle_control = max(0, 1 - 6*pow(wide_error + current_speed*0.003, 2)) # need to fix throttle and brake
+            brake = 1
         gear = max(1, (current_speed // 30))
+        if throttle_control == -1:
+            gear = -1
         # apply anti-windup???
 
         print("speed: " + str(vehicle_velocity_norm))
@@ -188,7 +201,7 @@ class RoarCompetitionSolution_MAIN:
             "throttle": np.clip(throttle_control, 0.0, 1.0),
             "steer": steer_control,
             "brake": np.clip(-throttle_control, 0.0, 1.0),
-            "hand_brake": 0.0,
+            "hand_brake": brake,
             "reverse": 0,
             "target_gear": gear
         }
