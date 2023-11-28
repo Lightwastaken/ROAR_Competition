@@ -24,7 +24,7 @@ async def main():
     waypoints = roar_py_instance.world.maneuverable_waypoints
     spawn_points = roar_py_instance.world.spawn_points
     roar_py_instance.close()
-    waypoints = waypoints[::30]
+    waypoints = waypoints[::10]
     i = 1
     color = 'blue'
     with plt.ion():
