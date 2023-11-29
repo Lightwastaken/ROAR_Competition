@@ -11,6 +11,29 @@ import json
 import logging
 
 
+
+class ZoneController:
+    def __init__(self):
+        # Define zones and corresponding control parameters
+        self.zone_mapping = {
+            "zone1": {"throttle": 0.9, "steer": 0.05},
+            "zone2": {"throttle": 0.5, "steer": 0.2},
+            "zone3": {"throttle": 0.3, "steer": -0.2},
+        }
+        ## this is not being used currently and can be changed if needed
+
+    def get_current_zone(self, car_location):
+        # Implement logic to determine the current zone based on car's location
+        if car_location[0] < -330 or (-200.0 <= car_location[0] < 300 and 700.0 <= car_location[1] < 1000) or (
+                -130 <= car_location[0] < -80 and -1000.0 <= car_location[1] < 0) or (
+                50 <= car_location[0] < 725 and 100.0 <= car_location[1] < 650) or (400 < car_location[0] < 650 and 97 < car_location[1] < 109) or (745 < car_location[0] < 765 and 850 < car_location[1] < 970):
+            return "zone 1"
+        elif (car_location[0] < -200 and 450 < car_location[1] < 800) or (
+                700 < car_location[0] and 710 < car_location[1]) or (car_location[0] < -130 and car_location[1] < -650):
+            return "zone 2"
+        else:
+            return "zone 3"
+
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -60,6 +83,7 @@ class RoarCompetitionSolution_MAIN:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
         self.start_time = time.time()
+        self.ZoneControl = ZoneController()
         self.integral_prior = 0
         self.steer_error_prior = 0
         self.error_prior = 0
@@ -155,6 +179,11 @@ class RoarCompetitionSolution_MAIN:
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
         print("steer control" + str(steer_control))
+        print(self.ZoneControl.get_current_zone(vehicle_location))
+        print(self.ZoneControl.get_current_zone(vehicle_location))
+        print(self.ZoneControl.get_current_zone(vehicle_location))
+        print(self.ZoneControl.get_current_zone(vehicle_location))
+        print(self.ZoneControl.get_current_zone(vehicle_location))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
