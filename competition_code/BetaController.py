@@ -28,13 +28,16 @@ class ZoneController:
                 -130 <= car_location[0] < -80 and -1000.0 <= car_location[1] < 0) or (
                 50 <= car_location[0] < 725 and 100.0 <= car_location[1] < 650) or (
                 400 < car_location[0] < 650 and 980 < car_location[1] < 1080) or (
-                745 < car_location[0] < 765 and 850 < car_location[1] < 970):
+                745 < car_location[0] < 765 and 850 < car_location[1] < 970) or (
+                700 < car_location[0] < 900 and 830 < car_location[0] < 1000):
             return 1
-        elif (car_location[0] < -200 and 450 < car_location[1] < 800) or (
+        elif (car_location[0] < -125 and 450 < car_location[1] < 800) or (
                 700 < car_location[0] and 710 < car_location[1]) or (
                 car_location[0] < -130 and car_location[1] < -650) or (
                 -350 < car_location[0] < -230 and 390 < car_location[1] < 850):
             return 2
+        elif (640 < car_location[0] and 1000 < car_location[1]) or (730 < car_location[0] and 720 < car_location[1] < 830):
+            return 4
         else:
             return 3
 
@@ -189,11 +192,14 @@ class RoarCompetitionSolution_MAIN:
         if self.ZoneControl.get_current_zone(vehicle_location) == 3:
             target_speed = 30
             print("ZONE DETECTED 3")
+            print("ZONE DETECTED 3")
         elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
             target_speed = 30
             print("ZONE DETECTED 2")
+            print("ZONE DETECTED 2")
         elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
             target_speed = 50
+            print("ZONE DETECTED 1")
             print("ZONE DETECTED 1")
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
