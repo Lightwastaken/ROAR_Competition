@@ -11,6 +11,37 @@ import json
 import logging
 
 
+
+class ZoneController:
+    def __init__(self):
+        # Define zones and corresponding control parameters
+        self.zone_mapping = {
+            "zone1": {"throttle": 0.9, "steer": 0.05},
+            "zone2": {"throttle": 0.5, "steer": 0.2},
+            "zone3": {"throttle": 0.3, "steer": -0.2},
+        }
+        ## this is not being used currently and can be changed if needed
+
+    def get_current_zone(self, car_location):
+        # Implement logic to determine the current zone based on car's location
+        if car_location[0] < -330 or (-200.0 <= car_location[0] < 300 and 700.0 <= car_location[1] < 1000) or (
+                -130 <= car_location[0] < -80 and -1000.0 <= car_location[1] < 0) or (
+                50 <= car_location[0] < 725 and 100.0 <= car_location[1] < 650) or (
+                400 < car_location[0] < 650 and 980 < car_location[1] < 1080) or (
+                745 < car_location[0] < 765 and 850 < car_location[1] < 970) or (
+                700 < car_location[0] < 900 and 830 < car_location[0] < 1000):
+            return 1
+        elif (car_location[0] < -125 and 450 < car_location[1] < 800) or (
+                700 < car_location[0] and 710 < car_location[1]) or (
+                car_location[0] < -130 and car_location[1] < -650) or (
+                -350 < car_location[0] < -230 and 390 < car_location[1] < 850):
+            return 2
+        elif (640 < car_location[0] and 1000 < car_location[1]) or (730 < car_location[0] and 720 < car_location[1] < 830):
+            return 4
+        else:
+            return 3
+
+
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -39,6 +70,7 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
+        self.handbrake = None
         self.data = None
         self.K_val_thresholds = None
         self.prev_key = None
@@ -59,7 +91,9 @@ class RoarCompetitionSolution_MAIN:
     async def initialize(self) -> None:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
+        self.handbrake = 0
         self.start_time = time.time()
+        self.ZoneControl = ZoneController()
         self.integral_prior = 0
         self.steer_error_prior = 0
         self.error_prior = 0
@@ -108,8 +142,7 @@ class RoarCompetitionSolution_MAIN:
         )
         # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
         waypoint_to_follow = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + 3) % len(self.maneuverable_waypoints)]
-
+            (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
@@ -149,48 +182,47 @@ class RoarCompetitionSolution_MAIN:
         Sensitivity = np.sqrt(vehicle_velocity_norm)
 
         steer_control = (
-                Skp / np.sqrt(vehicle_velocity_norm) * delta_heading / np.pi + (Ski * steer_integral) + (
-                    Skd * steer_derivative)
+                Skp * delta_heading / np.pi + (Ski * steer_integral) + (Skd * steer_derivative)
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
         print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
+        current_speed = vehicle_velocity_norm
+
         # normal implementation of throttle algo
-        target_speed = 40
+        target_speed = 45
+        if self.ZoneControl.get_current_zone(vehicle_location) == 3:
+            target_speed = 30
+            if current_speed > target_speed:
+                print("BREAK BREAK")
+                self.handbrake = 1
+            print("ZONE DETECTED 3")
+            print("ZONE DETECTED 3")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
+            target_speed = 45
+            print("ZONE DETECTED 2")
+            print("ZONE DETECTED 2")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
+            target_speed = 50
+            print("ZONE DETECTED 1")
+            print("ZONE DETECTED 1")
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior) / iteration_time
         integral = self.integral_prior + error * iteration_time
         i_value = Ki * integral
-        i_max = 1 / integral
-        i_min = 0
-        if integral > i_max and iteration_time > 10:
-            print("integral bounds hit:max")
-            integral = i_max
-        elif self.integral_prior < i_min:
-            print("integral bounds hit:min")
-            integral = i_min
         if error != self.error_prior:
             integral = 0
 
         throttle_control = Kp * error + Ki * integral + Kd * derivative
 
         # apply anti-windup???
-        # sharp turn stuff
-        sharp = self.maneuverable_waypoints[(self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
-        sharp = (sharp.location - vehicle_location)[:2]
-        sharp = np.arctan2(sharp[1], sharp[0])
-        sharp_angle = sharp - vehicle_rotation[2]
-        #        print(sharp,vehicle_rotation[2])
-        print('sharp:', sharp_angle)
-        #        steer_control=-sharp_angle
-        # 1=90 0=0
-        print(current_speed)
-        if abs(sharp_angle) >= .1 and current_speed >= 30:
-            steer_control = (-1 if sharp_angle > 0 else 1)
-            print('x')
+        gear = max(1, (current_speed // 10))
+        if throttle_control == -1:
+            gear = -1
+
         print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
         self.integral_prior = integral
@@ -199,9 +231,9 @@ class RoarCompetitionSolution_MAIN:
             "throttle": np.clip(throttle_control, 0.0, 1.0),
             "steer": steer_control,
             "brake": np.clip(-throttle_control, 0.0, 1.0),
-            "hand_brake": 0.0,
+            "hand_brake": self.handbrake,
             "reverse": 0,
-            "target_gear": 0
+            "target_gear": gear
         }
         await self.vehicle.apply_action(control)
         return control
