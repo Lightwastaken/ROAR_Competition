@@ -67,6 +67,7 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
+        self.handbrake = None
         self.data = None
         self.K_val_thresholds = None
         self.prev_key = None
@@ -87,6 +88,7 @@ class RoarCompetitionSolution_MAIN:
     async def initialize(self) -> None:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
+        self.handbrake = 0
         self.start_time = time.time()
         self.ZoneControl = ZoneController()
         self.integral_prior = 0
@@ -184,13 +186,18 @@ class RoarCompetitionSolution_MAIN:
         print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
+        current_speed = vehicle_velocity_norm
+
         # normal implementation of throttle algo
-        target_speed = 40
+        target_speed = 45
         if self.ZoneControl.get_current_zone(vehicle_location) == 3:
             target_speed = 30
+            if current_speed > target_speed:
+                print("BREAK BREAK")
+                self.handbrake = 1
             print("ZONE DETECTED 3")
         elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
-            target_speed = 30
+            target_speed = 45
             print("ZONE DETECTED 2")
         elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
             target_speed = 50
@@ -200,14 +207,6 @@ class RoarCompetitionSolution_MAIN:
         derivative = (error - self.error_prior) / iteration_time
         integral = self.integral_prior + error * iteration_time
         i_value = Ki * integral
-        i_max = 1 / integral
-        i_min = 0
-        if integral > i_max and iteration_time > 10:
-            print("integral bounds hit:max")
-            integral = i_max
-        elif self.integral_prior < i_min:
-            print("integral bounds hit:min")
-            integral = i_min
         if error != self.error_prior:
             integral = 0
 
@@ -226,7 +225,7 @@ class RoarCompetitionSolution_MAIN:
             "throttle": np.clip(throttle_control, 0.0, 1.0),
             "steer": steer_control,
             "brake": np.clip(-throttle_control, 0.0, 1.0),
-            "hand_brake": 0.0,
+            "hand_brake": self.handbrake,
             "reverse": 0,
             "target_gear": gear
         }
