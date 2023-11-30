@@ -11,6 +11,34 @@ import json
 import logging
 
 
+
+class ZoneController:
+    def __init__(self):
+        # Define zones and corresponding control parameters
+        self.zone_mapping = {
+            "zone1": {"throttle": 0.9, "steer": 0.05},
+            "zone2": {"throttle": 0.5, "steer": 0.2},
+            "zone3": {"throttle": 0.3, "steer": -0.2},
+        }
+        ## this is not being used currently and can be changed if needed
+
+    def get_current_zone(self, car_location):
+        # Implement logic to determine the current zone based on car's location
+        if car_location[0] < -330 or (-200.0 <= car_location[0] < 300 and 700.0 <= car_location[1] < 1000) or (
+                -130 <= car_location[0] < -80 and -1000.0 <= car_location[1] < 0) or (
+                50 <= car_location[0] < 725 and 100.0 <= car_location[1] < 650) or (
+                400 < car_location[0] < 650 and 980 < car_location[1] < 1080) or (
+                745 < car_location[0] < 765 and 850 < car_location[1] < 970):
+            return 1
+        elif (car_location[0] < -200 and 450 < car_location[1] < 800) or (
+                700 < car_location[0] and 710 < car_location[1]) or (
+                car_location[0] < -130 and car_location[1] < -650) or (
+                -350 < car_location[0] < -230 and 390 < car_location[1] < 850):
+            return 2
+        else:
+            return 3
+
+
 def normalize_rad(rad: float):
     return (rad + np.pi) % (2 * np.pi) - np.pi
 
@@ -60,6 +88,7 @@ class RoarCompetitionSolution_MAIN:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
         self.start_time = time.time()
+        self.ZoneControl = ZoneController()
         self.integral_prior = 0
         self.steer_error_prior = 0
         self.error_prior = 0
@@ -108,7 +137,13 @@ class RoarCompetitionSolution_MAIN:
         )
         # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
         waypoint_to_follow = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + 5) % len(self.maneuverable_waypoints)]
+            (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+
+        if ZoneController.get_current_zone(self, vehicle_location) == 3:
+            print("ZONE DETECTED")
+
+
+
 
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -177,6 +212,9 @@ class RoarCompetitionSolution_MAIN:
         throttle_control = Kp * error + Ki * integral + Kd * derivative
 
         # apply anti-windup???
+        gear = max(1, (current_speed // 10))
+        if throttle_control == -1:
+            gear = -1
 
         print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
@@ -188,7 +226,7 @@ class RoarCompetitionSolution_MAIN:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": 0.0,
             "reverse": 0,
-            "target_gear": 0
+            "target_gear": gear
         }
         await self.vehicle.apply_action(control)
         return control

@@ -7,7 +7,7 @@ import numpy as np
 import asyncio
 from typing import Optional, Dict, Any
 import matplotlib.pyplot as plt
-import transforms3d as tr3d
+import transforms3d as tr3
 
 
 async def main():
@@ -24,19 +24,25 @@ async def main():
     waypoints = roar_py_instance.world.maneuverable_waypoints
     spawn_points = roar_py_instance.world.spawn_points
     roar_py_instance.close()
-    waypoints = waypoints[::30]
+    waypoints = waypoints[::10]
+    i = 1
+    color = 'blue'
     with plt.ion():
         for waypoint in (waypoints[:] if waypoints is not None else []):
             rep_line = waypoint.line_representation
             print(str(waypoint.location[0]) + " , " + str(waypoint.location[1]))
             waypointx.append(waypoint.location[0])
             waypointy.append(waypoint.location[1])
-            # plt.plot(waypoint.location[0],waypoint.location[1], marker='o', color='crimson', linestyle='-')
+            if i % 2 == 0:
+                waypoints[:].remove(waypoint)
+            else:
+                plt.plot(waypoint.location[0], waypoint.location[1], marker='o', color=color, linestyle='-')
+            color = 'crimson'
             plt.pause(0.001)
+            i = i + 1
         plt.plot(waypointx, waypointy)
         plt.ioff()
         plt.show()
-
 
 if __name__ == '__main__':
     asyncio.run(main())
