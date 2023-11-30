@@ -70,6 +70,8 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
+        self.stopThrottle = None
+        self.handbrake = None
         self.data = None
         self.K_val_thresholds = None
         self.prev_key = None
@@ -90,6 +92,8 @@ class RoarCompetitionSolution_MAIN:
     async def initialize(self) -> None:
         # TODO: You can do some initial computation here if you want to.
         # For example, you can compute the path to the first waypoint.
+        self.stopThrottle = False
+        self.handbrake = 0
         self.start_time = time.time()
         self.ZoneControl = ZoneController()
         self.integral_prior = 0
@@ -205,7 +209,26 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        # target_speed = 40
+        target_speed = 45
+        if self.ZoneControl.get_current_zone(vehicle_location) == 3:
+            target_speed = 20
+            if current_speed > target_speed:
+                self.stopThrottle = True
+                print("BREAK BREAK")
+                self.handbrake = 1
+            else:
+                self.stopThrottle = False
+                self.handbrake = 0
+            print("ZONE DETECTED 3")
+            print("ZONE DETECTED 3")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
+            target_speed = 45
+            print("ZONE DETECTED 2")
+            print("ZONE DETECTED 2")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
+            target_speed = 50
+            print("ZONE DETECTED 1")
+            print("ZONE DETECTED 1")
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior) / iteration_time
@@ -223,6 +246,8 @@ class RoarCompetitionSolution_MAIN:
             integral = 0
 
         throttle_control = Kp * error + Ki * integral + Kd * derivative
+        if self.stopThrottle == True:
+            throttle_control = 0
 
         # apply anti-windup???
         gear = max(1, (current_speed // 10))
@@ -237,7 +262,7 @@ class RoarCompetitionSolution_MAIN:
             "throttle": np.clip(throttle_control, 0.0, 1.0),
             "steer": steer_control,
             "brake": np.clip(-throttle_control, 0.0, 1.0),
-            "hand_brake": 0.0,
+            "hand_brake": self.handbrake,
             "reverse": 0,
             "target_gear": gear
         }
