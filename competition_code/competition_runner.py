@@ -9,6 +9,8 @@ import carla
 import numpy as np
 import gymnasium as gym
 import asyncio
+from BetaController import ZoneController
+
 
 
 class RoarCompetitionRule:
@@ -116,6 +118,9 @@ class RoarCompetitionRule:
 
         self._last_vehicle_location = self.vehicle.get_3d_location()
         self.furthest_waypoints_index = 0
+
+    def ZoneController(self):
+        pass
 
 
 async def evaluate_solution(
