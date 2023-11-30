@@ -27,21 +27,23 @@ async def main():
     waypoints = waypoints[::1]
     with plt.ion():
 
+        i = 0
         for waypoint in (waypoints[:] if waypoints is not None else []):
-            rep_line = waypoint.line_representation
-            rep_line = np.asarray(rep_line)
-            print(str(waypoint.location[0]) + " , " + str(waypoint.location[1]))
-            waypoint_heading = tr3d.euler.euler2mat(*waypoint.roll_pitch_yaw) @ np.array([1, 0, 0])
-            plt.arrow(
-                waypoint.location[0],
-                waypoint.location[1],
-                waypoint_heading[0] * 1,
-                waypoint_heading[1] * 1,
-                width=0.5,
-                color='r'
-            )
-            plt.plot(rep_line[:, 0], rep_line[:, 1])
-            plt.pause(0.001)
+            if i % 2 == 0:
+                rep_line = waypoint.line_representation
+                rep_line = np.asarray(rep_line)
+                print(str(waypoint.location[0]) + " , " + str(waypoint.location[1]))
+                waypoint_heading = tr3d.euler.euler2mat(*waypoint.roll_pitch_yaw) @ np.array([1, 0, 0])
+                plt.arrow(
+                    waypoint.location[0],
+                    waypoint.location[1],
+                    waypoint_heading[0] * 1,
+                    waypoint_heading[1] * 1,
+                    width=0.5,
+                    color='r'
+                )
+                plt.plot(rep_line[:, 0], rep_line[:, 1])
+                plt.pause(0.001)
         plt.ioff()
         plt.show()
 
