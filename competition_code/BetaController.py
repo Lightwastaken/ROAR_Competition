@@ -139,18 +139,6 @@ class RoarCompetitionSolution_MAIN:
         waypoint_to_follow = self.maneuverable_waypoints[
             (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
 
-        zone = self.ZoneControl.get_current_zone(vehicle_location)
-        print("zone:", zone)
-        if zone == 1:
-            target_speed = 100
-        elif zone == 2:
-            pass
-        else:
-            pass
-
-
-
-
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
@@ -190,7 +178,7 @@ class RoarCompetitionSolution_MAIN:
         Sensitivity = np.sqrt(vehicle_velocity_norm)
 
         steer_control = (
-                Skp * steer_error + (Ski * steer_integral) + (Skd * steer_derivative)
+                Skp * delta_heading / np.pi + (Ski * steer_integral) + (Skd * steer_derivative)
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
@@ -198,7 +186,16 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        target_speed = 50
+        target_speed = 40
+        if self.ZoneControl.get_current_zone(vehicle_location) == 3:
+            target_speed = 30
+            print("ZONE DETECTED 3")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
+            target_speed = 30
+            print("ZONE DETECTED 2")
+        elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
+            target_speed = 50
+            print("ZONE DETECTED 1")
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior) / iteration_time
