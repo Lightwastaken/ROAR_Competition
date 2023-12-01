@@ -34,9 +34,12 @@ class ZoneController:
         elif (car_location[0] < -125 and 450 < car_location[1] < 820) or (
                 700 < car_location[0] and 710 < car_location[1]) or (
                 car_location[0] < -130 and car_location[1] < -650) or (
-                -350 < car_location[0] < -230 and 390 < car_location[1] < 850):
+                -350 < car_location[0] < -230 and 390 < car_location[1] < 850) or (
+                -100 < car_location[0] < -35 and -170 < car_location[1] < 11) or (
+                -385 < car_location[0] < -160 and -1100 < car_location[1] < -840):
             return 2
-        elif (640 < car_location[0] and 1000 < car_location[1]) or (730 < car_location[0] and 720 < car_location[1] < 830):
+        elif (640 < car_location[0] and 1000 < car_location[1]) or (
+                730 < car_location[0] and 720 < car_location[1] < 830):
             return 4
         else:
             return 3
