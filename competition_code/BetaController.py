@@ -148,10 +148,16 @@ class RoarCompetitionSolution_MAIN:
 
         zone = self.ZoneControl.get_current_zone(vehicle_location)
         brake = 0
+        self.stopThrottle = False
+        self.handbrake = 0
         if zone == 3:
+            self.stopThrottle = True
+            print("BREAK BREAK")
+            self.handbrake = 1
             target_speed = 0
-            brake = 1
             print("ZONE DETECTED 3")
+            waypoint_to_follow = self.maneuverable_waypoints[
+                (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
         elif zone == 2:
             target_speed = 70
             waypoint_to_follow = self.maneuverable_waypoints[
@@ -160,7 +166,7 @@ class RoarCompetitionSolution_MAIN:
         elif zone == 1:
             target_speed = 120
             waypoint_to_follow = self.maneuverable_waypoints[
-                (self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
+                (self.current_waypoint_idx + 25) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 1")
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -209,26 +215,6 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
-        target_speed = 45
-        if self.ZoneControl.get_current_zone(vehicle_location) == 3:
-            target_speed = 20
-            if current_speed > target_speed:
-                self.stopThrottle = True
-                print("BREAK BREAK")
-                self.handbrake = 1
-            else:
-                self.stopThrottle = False
-                self.handbrake = 0
-            print("ZONE DETECTED 3")
-            print("ZONE DETECTED 3")
-        elif self.ZoneControl.get_current_zone(vehicle_location) == 2:
-            target_speed = 45
-            print("ZONE DETECTED 2")
-            print("ZONE DETECTED 2")
-        elif self.ZoneControl.get_current_zone(vehicle_location) == 1:
-            target_speed = 50
-            print("ZONE DETECTED 1")
-            print("ZONE DETECTED 1")
         current_speed = vehicle_velocity_norm
         error = target_speed - current_speed
         derivative = (error - self.error_prior) / iteration_time
@@ -246,8 +232,10 @@ class RoarCompetitionSolution_MAIN:
             integral = 0
 
         throttle_control = Kp * error + Ki * integral + Kd * derivative
-        if self.stopThrottle == True:
-            throttle_control = 0
+        if self.stopThrottle:
+            throttle_control = -1
+
+        print(throttle_control)
 
         # apply anti-windup???
         gear = max(1, (current_speed // 10))
