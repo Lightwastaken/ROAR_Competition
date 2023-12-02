@@ -230,4 +230,3 @@ class PyGameViewer2:
 
     def close(self):
         pygame.quit()
-
