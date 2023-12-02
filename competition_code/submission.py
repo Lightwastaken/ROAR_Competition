@@ -9,7 +9,7 @@ import numpy as np
 import time
 import json
 import logging
-logging.basicConfig(level=logging.ERROR)
+
 
 
 class ZoneController:
@@ -158,11 +158,11 @@ class RoarCompetitionSolution:
         current_speed = vehicle_velocity_norm
         target_speed = 40
         if zone == 4:
-            logging.debug("ZONE DETECTED 4")
+            print("ZONE DETECTED 4")
             target_speed = 20
             if current_speed > target_speed:
                 slowThrottle = True
-                logging.debug("BREAK BREAK")
+                print("BREAK BREAK")
             else:
                 slowThrottle = False
                 self.handbrake = 0
@@ -170,35 +170,35 @@ class RoarCompetitionSolution:
                 (self.current_waypoint_idx + 6) % len(self.maneuverable_waypoints)]
         elif zone == 3:
             self.stopThrottle = True
-            logging.debug("BREAK BREAK")
+            print("BREAK BREAK")
             target_speed = 35
             if current_speed > target_speed:
                 self.stopThrottle = True
-                logging.debug("BREAK BREAK")
+                print("BREAK BREAK")
                 self.handbrake = 0
             else:
                 self.stopThrottle = False
                 self.handbrake = 0
-            logging.debug("ZONE DETECTED 3")
+            print("ZONE DETECTED 3")
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
         elif zone == 2:
             target_speed = 130
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
-            logging.debug("ZONE DETECTED 2")
+            print("ZONE DETECTED 2")
         elif zone == 1:
             target_speed = 150
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 25) % len(self.maneuverable_waypoints)]
-            logging.debug("ZONE DETECTED 1")
+            print("ZONE DETECTED 1")
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
 
         # Calculate delta angle towards the target waypoint
-        logging.debug("rotation" + str(vehicle_rotation[2]))
-        logging.debug(heading_to_waypoint)
+        print("rotation" + str(vehicle_rotation[2]))
+        print(heading_to_waypoint)
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
         curr_Speed = (int(vehicle_velocity_norm))
         # appending our current speed in an array with all the speed boundaries in PID config
@@ -219,7 +219,7 @@ class RoarCompetitionSolution:
         Kp = self.data["Throttle_Controller"][K_Values_Determinant]["Kp"]
         Ki = self.data["Throttle_Controller"][K_Values_Determinant]["Ki"]
         Kd = self.data["Throttle_Controller"][K_Values_Determinant]["Kd"]
-        logging.debug(K_Values_Determinant)
+        print(K_Values_Determinant)
         # we remove our current speed val, so we can reuse this algo
         self.K_val_thresholds.remove(curr_Speed)
         # Proportional controller to steer the vehicle towards the target waypoint, normal implementation
@@ -235,7 +235,7 @@ class RoarCompetitionSolution:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
-        logging.debug("steer control" + str(steer_control))
+        print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
@@ -247,10 +247,10 @@ class RoarCompetitionSolution:
         i_max = 1 / integral
         i_min = 0
         if integral > i_max and iteration_time > 10:
-            logging.debug("integral bounds hit:max")
+            print("integral bounds hit:max")
             integral = i_max
         elif self.integral_prior < i_min:
-            logging.debug("integral bounds hit:min")
+            print("integral bounds hit:min")
             integral = i_min
         if error != self.error_prior:
             integral = 0
@@ -265,8 +265,8 @@ class RoarCompetitionSolution:
                 throttle_control = 0
         if slowThrottle:
             throttle_control = 0.0
-        logging.debug("throttle", throttle_control)
-        logging.debug("heading", delta_heading)
+        print("throttle", throttle_control)
+        print("heading", delta_heading)
 
 
         # apply anti-windup???
@@ -274,7 +274,7 @@ class RoarCompetitionSolution:
         if throttle_control == -1:
             gear = -1
 
-        logging.debug("speed: " + str(vehicle_velocity_norm))
+        print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
         self.integral_prior = integral
 
