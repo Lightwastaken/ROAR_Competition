@@ -227,3 +227,7 @@ class PyGameViewer2:
         pygame.display.flip()
         self.clock.tick(60)
         return depth_value
+
+    def close(self):
+        pygame.quit()
+
