@@ -1,15 +1,19 @@
 import roar_py_interface
 import roar_py_carla
 from submission import RoarCompetitionSolution
+from BetaController import RoarCompetitionSolution_MAIN
 from infrastructure import RoarCompetitionAgentWrapper, ManualControlViewer
+from PyGame_Viewer2 import PyGameViewer2
 from typing import List, Type, Optional, Dict, Any
 import carla
 import numpy as np
 import gymnasium as gym
 import asyncio
+from BetaController import ZoneController
 
 
-class RoarCompetitionRule:
+
+class RoarCompetitionModifed:
     def __init__(
             self,
             waypoints: List[roar_py_interface.RoarPyWaypoint],
@@ -64,7 +68,7 @@ class RoarCompetitionRule:
         min_index = 0
         # print(f"Previous furthest index {previous_furthest_index}")
         endind_index = previous_furthest_index + check_step if (
-                    previous_furthest_index + check_step <= len(self.waypoints)) else len(self.waypoints)
+                previous_furthest_index + check_step <= len(self.waypoints)) else len(self.waypoints)
         for i, waypoint in enumerate(self.waypoints[previous_furthest_index:endind_index]):
             waypoint_delta = waypoint.location - current_location
             projection = np.dot(waypoint_delta, delta_vector_unit)
@@ -78,8 +82,13 @@ class RoarCompetitionRule:
 
         self.furthest_waypoints_index += min_index  # = new_furthest_index
         self._last_vehicle_location = current_location
+        waypoint_to_follow = self.waypoints[
+            (self.furthest_waypoints_index + 3) % len(self.waypoints)]
+        vector_to_waypoint = (waypoint_to_follow.location - current_location)[:2]
+        heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
         print(
             f"reach waypoints {self.furthest_waypoints_index} at {self.waypoints[self.furthest_waypoints_index].location}")
+        return heading_to_waypoint
 
     async def respawn(
             self
@@ -110,15 +119,18 @@ class RoarCompetitionRule:
         self._last_vehicle_location = self.vehicle.get_3d_location()
         self.furthest_waypoints_index = 0
 
+    def ZoneController(self):
+        pass
+
 
 async def evaluate_solution(
         world: roar_py_carla.RoarPyCarlaWorld,
-        solution_constructor: Type[RoarCompetitionSolution],
+        solution_constructor: Type[RoarCompetitionSolution_MAIN],
         max_seconds=12000,
         enable_visualization: bool = False,
 ) -> Optional[Dict[str, Any]]:
     if enable_visualization:
-        viewer = ManualControlViewer()
+        viewer = PyGameViewer2()
 
     # Spawn vehicle and sensors to receive data
     waypoints = world.maneuverable_waypoints
@@ -137,14 +149,22 @@ async def evaluate_solution(
         image_width=1024,
         image_height=768
     )
+    depth_camera = vehicle.attach_camera_sensor(
+        roar_py_interface.RoarPyCameraSensorDataDepth,
+        np.array([1.0 * vehicle.bounding_box.extent[0], 0.0, 1.0]),  # relative position
+        np.array([0, 0 / 180.0 * np.pi, 0]),  # relative rotation
+        image_width=500,
+        image_height=250
+    )
+
     location_sensor = vehicle.attach_location_in_world_sensor()
     velocity_sensor = vehicle.attach_velocimeter_sensor()
     rpy_sensor = vehicle.attach_roll_pitch_yaw_sensor()
     occupancy_map_sensor = vehicle.attach_occupancy_map_sensor(
-        50,
-        50,
-        2.0,
-        2.0
+        200,
+        200,
+        20.0,
+        5.0
     )
     collision_sensor = vehicle.attach_collision_sensor(
         np.zeros(3),
@@ -159,7 +179,7 @@ async def evaluate_solution(
     assert collision_sensor is not None
 
     # Start to run solution
-    solution: RoarCompetitionSolution = solution_constructor(
+    solution: RoarCompetitionSolution_MAIN = solution_constructor(
         waypoints,
         RoarCompetitionAgentWrapper(vehicle),
         camera,
@@ -184,7 +204,6 @@ async def evaluate_solution(
     await vehicle.receive_observation()
     await solution.initialize()
 
-
     while True:
         # terminate if time out
         current_time = world.last_tick_elapsed_seconds
@@ -195,7 +214,7 @@ async def evaluate_solution(
         # receive sensors' data
         await vehicle.receive_observation()
 
-        await rule.tick()
+        target_heading = await rule.tick()
 
         # terminate if there is major collision
         collision_impulse_norm = np.linalg.norm(collision_sensor.get_last_observation().impulse_normal)
@@ -209,7 +228,11 @@ async def evaluate_solution(
             break
 
         if enable_visualization:
-            if viewer.render(camera.get_last_observation()) is None:
+            occupancy_map = occupancy_map_sensor.producer.plot_occupancy_map(vehicle.get_3d_location()[:2],
+                                                                             vehicle.get_roll_pitch_yaw()[2])
+            heading = vehicle.get_roll_pitch_yaw()[2]
+            current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
+            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed, heading, target_heading) is None:
                 vehicle.close()
                 return None
 
@@ -236,7 +259,7 @@ async def main():
     world.set_asynchronous(False)
     evaluation_result = await evaluate_solution(
         world,
-        RoarCompetitionSolution,
+        RoarCompetitionSolution_MAIN,
         max_seconds=5000,
         enable_visualization=True
     )
