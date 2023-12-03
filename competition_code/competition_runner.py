@@ -1,6 +1,6 @@
 import roar_py_interface
 import roar_py_carla
-from submission import RoarCompetitionSolution
+from BetaController import RoarCompetitionSolution_MAIN
 from infrastructure import RoarCompetitionAgentWrapper, ManualControlViewer
 from typing import List, Type, Optional, Dict, Any
 import carla
@@ -113,7 +113,7 @@ class RoarCompetitionRule:
 
 async def evaluate_solution(
         world: roar_py_carla.RoarPyCarlaWorld,
-        solution_constructor: Type[RoarCompetitionSolution],
+        solution_constructor: Type[RoarCompetitionSolution_MAIN],
         max_seconds=12000,
         enable_visualization: bool = False,
 ) -> Optional[Dict[str, Any]]:
@@ -159,7 +159,7 @@ async def evaluate_solution(
     assert collision_sensor is not None
 
     # Start to run solution
-    solution: RoarCompetitionSolution = solution_constructor(
+    solution: RoarCompetitionSolution_MAIN = solution_constructor(
         waypoints,
         RoarCompetitionAgentWrapper(vehicle),
         camera,
@@ -236,7 +236,7 @@ async def main():
     world.set_asynchronous(False)
     evaluation_result = await evaluate_solution(
         world,
-        RoarCompetitionSolution,
+        RoarCompetitionSolution_MAIN,
         max_seconds=5000,
         enable_visualization=True
     )
