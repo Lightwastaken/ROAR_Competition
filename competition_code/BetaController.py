@@ -112,7 +112,7 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = 0
         self.prev_key = 14
         self.K_val_thresholds = []
-        with open('PIDconfig.json') as json_file:
+        with open(r'C:\Users\roar\Desktop\ROAR_PY\ROAR_Competition\competition_code\PIDconfig.json') as json_file:
             self.data = json.load(json_file)
         controller_values = self.data["Throttle_Controller"]
         for key in controller_values:
@@ -192,6 +192,7 @@ class RoarCompetitionSolution_MAIN:
         slowThrottle = False
         current_speed = vehicle_velocity_norm
         target_speed = 40
+        full_throttle = False
         if zone == self.prev_zone:
             turnTimer = time.time()
             self.same_zone = True
@@ -214,7 +215,7 @@ class RoarCompetitionSolution_MAIN:
             self.stopThrottle = True
             print("BREAK BREAK")
             target_speed = 35
-            if self.same_zone and currtime - turnTimer > 1:
+            if self.same_zone and currtime - turnTimer > 1 or current_speed + 2 > max_velocity:
                 self.stopThrottle = True
                 print("BREAK BREAK")
                 self.handbrake = 0
@@ -225,20 +226,24 @@ class RoarCompetitionSolution_MAIN:
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 14) % len(self.maneuverable_waypoints)]
         elif zone == 2:
-            # target_speed = 130
+            target_speed = 130
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 2")
+            if current_speed < max_velocity:
+                full_throttle = True
         elif zone == 1:
-            # target_speed = 150
+            target_speed = 150
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 25) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 1")
+            if current_speed < max_velocity:
+                full_throttle = True
         elif zone == 5:
             self.stopThrottle = True
             print("BREAK BREAK")
-            target_speed = 30
-            if self.same_zone and currtime - turnTimer > 1.5:
+            target_speed = 25
+            if current_speed > target_speed:
                 self.stopThrottle = True
                 print("BREAK BREAK")
                 self.handbrake = 0
@@ -247,7 +252,7 @@ class RoarCompetitionSolution_MAIN:
                 self.handbrake = 0
             print("ZONE DETECTED 5")
             waypoint_to_follow = self.maneuverable_waypoints[
-                (self.current_waypoint_idx + 5) % len(self.maneuverable_waypoints)]
+                (self.current_waypoint_idx + 12) % len(self.maneuverable_waypoints)]
         self.prev_zone = zone
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
@@ -315,13 +320,17 @@ class RoarCompetitionSolution_MAIN:
         throttle_control = Kp * error + Ki * integral + Kd * derivative
         # if abs(delta_heading) > 0.018:
         #     throttle_control = 0
+        if full_throttle:
+            throttle_control = 1
+
         if self.stopThrottle:
-            if current_speed > 68:
-                throttle_control = -1
-            else:
-                throttle_control = 0
+            throttle_control = 0
+        # else:
+        #     throttle_control = 1
         if slowThrottle:
             throttle_control = 0.0
+
+
         print("throttle", throttle_control)
         print("heading", delta_heading)
 
