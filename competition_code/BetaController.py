@@ -236,8 +236,8 @@ class RoarCompetitionSolution_MAIN:
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 20) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 2")
-            if current_speed < max_velocity:
-                full_throttle = True
+            # if current_speed < max_velocity:
+            #     full_throttle = True
         elif zone == 1:
             Skd += 0.01
             Skp *= 0.85
@@ -246,8 +246,8 @@ class RoarCompetitionSolution_MAIN:
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 25) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 1")
-            if current_speed < max_velocity:
-                full_throttle = True
+            # if current_speed < max_velocity:
+            #     full_throttle = True
         elif zone == 5:
             self.stopThrottle = True
             # print("BREAK BREAK")
