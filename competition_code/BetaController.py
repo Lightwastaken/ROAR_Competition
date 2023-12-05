@@ -44,8 +44,6 @@ class ZoneController:
             return 4
         elif (-370 < car_location[0] < -250 and 260 < car_location[1] < 450):
             return 5
-        else:
-            return 3
 
 
 def normalize_rad(rad: float):
@@ -76,6 +74,7 @@ class RoarCompetitionSolution_MAIN:
             occupancy_map_sensor: roar_py_interface.RoarPyOccupancyMapSensor = None,
             collision_sensor: roar_py_interface.RoarPyCollisionSensor = None,
     ) -> None:
+        self.ticks = None
         self.accelerate = None
         self.prev_zone = None
         self.same_zone = None
@@ -148,7 +147,8 @@ class RoarCompetitionSolution_MAIN:
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
 
-        # Find the waypoint closest to the vehicle
+        # Find the waypoint closest to the vehicle print
+        
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
@@ -212,10 +212,11 @@ class RoarCompetitionSolution_MAIN:
                 (self.current_waypoint_idx + 15) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 2")
         elif zone == 3:
-            Skp *= 1
+            Skp *= 2.2
+            Ski += 0.02
             self.stopThrottle = True
             # print("BREAK BREAK")
-            target_speed = 35
+            target_speed = 37
             if self.same_zone and currtime - turnTimer > 1:
                 self.stopThrottle = True
                 # print("BREAK BREAK")
@@ -290,7 +291,7 @@ class RoarCompetitionSolution_MAIN:
             integral = 0
         if steer_error != self.steer_error_prior:
             steer_integral = 0
-        if delta_heading > 0.4:
+        if self.same_zone is not True:
             steer_integral = 0
             self.steer_error_prior = 0
         steer_control = (
@@ -330,7 +331,7 @@ class RoarCompetitionSolution_MAIN:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": self.handbrake,
             "reverse": 0,
-            "target_gear": gear
+            "target_gear": 0
         }
         await self.vehicle.apply_action(control)
         return control
