@@ -31,6 +31,9 @@ class ZoneController:
                 745 < car_location[0] < 765 and 830 < car_location[1] < 970) or (
                 700 < car_location[0] < 900 and 830 < car_location[0] < 1000):
             return 1
+        elif (-75 < car_location[0] < 10 and -115 < car_location[1] < 140) or (
+                -170 < car_location[0] < -100 and -1065 < car_location[1] < -800):
+            return 6
         elif (car_location[0] < -125 and 450 < car_location[1] < 820) or (
                 # 700 < car_location[0] and 710 < car_location[1]) or (
                 car_location[0] < -130 and car_location[1] < -650) or (
@@ -44,6 +47,8 @@ class ZoneController:
             return 4
         elif (-370 < car_location[0] < -250 and 260 < car_location[1] < 450):
             return 5
+        else:
+            return 3
 
 
 def normalize_rad(rad: float):
@@ -147,8 +152,7 @@ class RoarCompetitionSolution_MAIN:
         vehicle_velocity = self.velocity_sensor.get_last_gym_observation()
         vehicle_velocity_norm = np.linalg.norm(vehicle_velocity)
 
-        # Find the waypoint closest to the vehicle print
-        
+        # Find the waypoint closest to the vehicle
         self.current_waypoint_idx = filter_waypoints(
             vehicle_location,
             self.current_waypoint_idx,
@@ -157,6 +161,28 @@ class RoarCompetitionSolution_MAIN:
         # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
         waypoint_to_follow = self.maneuverable_waypoints[
             (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+
+        # physics :(
+        waypoint1 = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+        waypoint2 = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 30) % len(self.maneuverable_waypoints)]
+        waypoint3 = self.maneuverable_waypoints[
+            (self.current_waypoint_idx + 50) % len(self.maneuverable_waypoints)]
+
+        vector_to_waypoint_menger1 = (waypoint1.location - waypoint3.location)[:2]
+        heading_to_waypoint_menger1 = np.arctan2(vector_to_waypoint_menger1[1], vector_to_waypoint_menger1[0])
+        vector_to_waypoint_menger2 = (waypoint1.location - waypoint2.location)[:2]
+        heading_to_waypoint_menger2 = np.arctan2(vector_to_waypoint_menger2[1], vector_to_waypoint_menger2[0])
+        angle_of_curve = abs(heading_to_waypoint_menger2 - heading_to_waypoint_menger1)
+        inverse_radius = abs((2 * np.sin(angle_of_curve)) / (np.sqrt(
+            (waypoint1.location[0] - waypoint3.location[0]) ** 2 + (
+                        waypoint1.location[1] - waypoint3.location[1]) ** 2)))
+        acceleration = 0.9 * 9.81
+        max_velocity = np.sqrt(acceleration / 1 / inverse_radius)
+        print("max velocity", max_velocity)
+
+
         # Calculate delta vector towards the target waypoint
         vector_to_waypoint = (waypoint_to_follow.location - vehicle_location)[:2]
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
@@ -193,6 +219,8 @@ class RoarCompetitionSolution_MAIN:
         slowThrottle = False
         current_speed = vehicle_velocity_norm
         target_speed = 40
+        full_throttle = False
+        fullStop = False
         if zone == self.prev_zone:
             turnTimer = time.time()
             self.same_zone = True
@@ -200,14 +228,18 @@ class RoarCompetitionSolution_MAIN:
             self.same_zone = False
         currtime = time.time()
         if zone == 4:
+            Skp *= 0.85
+            Ski *= 1.005
             target_speed = 35
-            if self.same_zone and currtime - turnTimer > 1:
+            if current_speed > max_velocity:
                 self.stopThrottle = True
-                # print("BREAK BREAK")
-            else:
-                self.stopThrottle = False
-            if self.same_zone and currtime - turnTimer > 2:
-                self.accelerate = True
+            # if self.same_zone and currtime - turnTimer > 1:
+            #     self.stopThrottle = True
+            #     # print("BREAK BREAK")
+            # else:
+            #     self.stopThrottle = False
+            # if self.same_zone and currtime - turnTimer > 2:
+            #     self.accelerate = True
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 15) % len(self.maneuverable_waypoints)]
             print("ZONE DETECTED 2")
@@ -216,8 +248,8 @@ class RoarCompetitionSolution_MAIN:
             Ski += 0.02
             self.stopThrottle = True
             # print("BREAK BREAK")
-            target_speed = 37
-            if self.same_zone and currtime - turnTimer > 1:
+            target_speed = 36
+            if current_speed > max_velocity:
                 self.stopThrottle = True
                 # print("BREAK BREAK")
                 self.handbrake = 0
@@ -230,7 +262,9 @@ class RoarCompetitionSolution_MAIN:
             waypoint_to_follow = self.maneuverable_waypoints[
                 (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
         elif zone == 2:
-            Skp *= 0.935
+            Skp *= 0.920
+            Skd *= 1.20
+            Ski *= 1.0001
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
             target_speed = 130
             waypoint_to_follow = self.maneuverable_waypoints[
@@ -248,16 +282,26 @@ class RoarCompetitionSolution_MAIN:
             self.stopThrottle = True
             # print("BREAK BREAK")
             target_speed = 30
-            if self.same_zone and currtime - turnTimer > 3:
-                self.stopThrottle = True
-                # print("BREAK BREAK")
-                self.handbrake = 0
-            else:
-                self.stopThrottle = False
-                self.handbrake = 0
+            if current_speed > max_velocity:
+                fullStop = True
+            # if self.same_zone and currtime - turnTimer > 3:
+            #     self.stopThrottle = True
+            #     # print("BREAK BREAK")
+            #     self.handbrake = 0
+            # else:
+            #     self.stopThrottle = False
+            #     self.handbrake = 0
             print("ZONE DETECTED 5")
             waypoint_to_follow = self.maneuverable_waypoints[
-                (self.current_waypoint_idx + 5) % len(self.maneuverable_waypoints)]
+                (self.current_waypoint_idx + 12) % len(self.maneuverable_waypoints)]
+        elif zone == 6:
+            self.stopThrottle = True
+            # print("BREAK BREAK")
+            target_speed = 30
+            if current_speed > max_velocity:
+                self.stopThrottle = True
+            print("ZONE DETECTED 6")
+
         self.prev_zone = zone
 
 
@@ -270,7 +314,12 @@ class RoarCompetitionSolution_MAIN:
         # square rooting the velocity makes it so that higher speed lower steer applied I think i chatgpted this
         Sensitivity = np.sqrt(vehicle_velocity_norm)
 
+        steer_control = (
+                Skp * delta_heading / np.pi + (Ski * steer_integral) + (Skd * steer_derivative)
+        ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
+        steer_control = np.clip(steer_control, -1.0, 1.0)
 
+        print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
@@ -291,7 +340,7 @@ class RoarCompetitionSolution_MAIN:
             integral = 0
         if steer_error != self.steer_error_prior:
             steer_integral = 0
-        if self.same_zone is not True:
+        if delta_heading > 0.4:
             steer_integral = 0
             self.steer_error_prior = 0
         steer_control = (
@@ -303,15 +352,23 @@ class RoarCompetitionSolution_MAIN:
         throttle_control = Kp * error + Ki * integral + Kd * derivative
         # if abs(delta_heading) > 0.018:
         #     throttle_control = 0
+        if full_throttle:
+            throttle_control = 1
+
         if self.stopThrottle:
-            if current_speed > 68:
-                throttle_control = - math.pow(1 - throttle_control * (1 + 0.6), currtime - turnTimer)
-            else:
-                throttle_control = 0
+            # if current_speed > 68:
+            #     throttle_control = - math.pow(1 - throttle_control * (1 + 0.6), currtime - turnTimer)
+            # else:
+            throttle_control -= 0.2
+        else:
+            throttle_control = 1
         if slowThrottle:
             throttle_control = math.pow(1 - throttle_control * (1 + 0.6), currtime - turnTimer)
         if self.accelerate:
             throttle_control = 1
+
+        if fullStop:
+            throttle_control = 0
 
         print("throttle", throttle_control)
         print("heading", delta_heading)
@@ -331,7 +388,7 @@ class RoarCompetitionSolution_MAIN:
             "brake": np.clip(-throttle_control, 0.0, 1.0),
             "hand_brake": self.handbrake,
             "reverse": 0,
-            "target_gear": 0
+            "target_gear": gear
         }
         await self.vehicle.apply_action(control)
         return control
