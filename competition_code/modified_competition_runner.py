@@ -9,11 +9,12 @@ import carla
 import numpy as np
 import gymnasium as gym
 import asyncio
+import json
 from BetaController import ZoneController
 
 
 
-class RoarCompetitionModifed:
+class RoarCompetitionRule:
     def __init__(
             self,
             waypoints: List[roar_py_interface.RoarPyWaypoint],
