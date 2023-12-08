@@ -26,7 +26,7 @@ class ZoneController:
         if (-75 < car_location[0] < 140 and -115 < car_location[1] < 200) or (
                 -170 < car_location[0] < -100 and -1050 < car_location[1] < -890):
             return 6
-        elif (-400 < car_location[0] < -240 and 180 < car_location[1] < 360):
+        elif (-400 < car_location[0] < -240 and 250 < car_location[1] < 350):
             return 5
         elif (car_location[0] < -350 and car_location[1] < 220) or (
                 -200.0 <= car_location[0] < 300 and 700.0 <= car_location[1] < 905) or (
@@ -284,7 +284,7 @@ class RoarCompetitionSolution_MAIN:
             if current_speed >= 60:
                 max_velocity -= 20
         elif zone == 5:
-            target_speed = 50
+            target_speed = 70
             # print("BREAK BREAK")
             Skp *= 1
             # if current_speed > max_velocity and current_speed > target_speed:
@@ -297,13 +297,12 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = False
             #     self.handbrake = 0
             print("ZONE DETECTED 5")
-            # max_velocity = 31
         elif zone == 6:
             # print("BREAK BREAK")
             # if current_speed > max_velocity:
             #     self.stopThrottle = True
             print("ZONE DETECTED 6")
-            Skp *= 1.5
+            Skp *= 2
             target_speed = 35
             # max_velocity = 33
 
