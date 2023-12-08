@@ -266,6 +266,7 @@ class RoarCompetitionSolution_MAIN:
             #     self.accelerate = True
             # # print("ZONE DETECTED 3")
         elif zone == 2:
+            full_throttle = True
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
             target_speed = 130
             Skp *= 0.920
@@ -276,16 +277,16 @@ class RoarCompetitionSolution_MAIN:
             Skd += 0.01
             Skp *= 0.85
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
-            target_speed = 150
+            target_speed = 200
             print("ZONE DETECTED 1")
             # if current_speed < max_velocity:
             #     full_throttle = True
             if current_speed >= 60:
                 max_velocity -= 20
         elif zone == 5:
-            target_speed = 32
+            target_speed = 50
             # print("BREAK BREAK")
-            Skp *= 1.4
+            Skp *= 1
             # if current_speed > max_velocity and current_speed > target_speed:
             #     fullStop = True
             # if self.same_zone and currtime - turnTimer > 3:
@@ -296,15 +297,15 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = False
             #     self.handbrake = 0
             print("ZONE DETECTED 5")
-            max_velocity = 31
+            # max_velocity = 31
         elif zone == 6:
             # print("BREAK BREAK")
             # if current_speed > max_velocity:
             #     self.stopThrottle = True
             print("ZONE DETECTED 6")
-            Skp *= 2.5
-            target_speed = 37
-            max_velocity = 33
+            Skp *= 1.5
+            target_speed = 35
+            # max_velocity = 33
 
         self.prev_zone = zone
 
@@ -369,7 +370,7 @@ class RoarCompetitionSolution_MAIN:
         if current_speed > max_velocity:
             throttle_control = -1
             stop_brake = 1
-        else:
+        elif full_throttle:
             throttle_control = 1
 
         if throttle_control == -1:
