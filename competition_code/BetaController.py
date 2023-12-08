@@ -135,7 +135,6 @@ class RoarCompetitionSolution_MAIN:
             self.current_waypoint_idx,
             self.maneuverable_waypoints
         )
-        self.throttle = 1
 
     async def step(
             self
@@ -161,7 +160,7 @@ class RoarCompetitionSolution_MAIN:
         )
         # We use the 3rd waypoint ahead of the current waypoint as the target waypoint
         waypoint_to_follow = self.maneuverable_waypoints[
-            (self.current_waypoint_idx + 10) % len(self.maneuverable_waypoints)]
+            (self.current_waypoint_idx + 11) % len(self.maneuverable_waypoints)]
 
         # physics :(
         waypoint1 = self.maneuverable_waypoints[
@@ -231,7 +230,6 @@ class RoarCompetitionSolution_MAIN:
         zone_throttle = 1
         stop_brake = 0
         if zone == self.prev_zone:
-            turnTimer = time.time()
             self.same_zone = True
         elif zone != self.prev_zone:
             self.same_zone = False
@@ -239,8 +237,7 @@ class RoarCompetitionSolution_MAIN:
         if zone == 4:
             Skp *= 2.5
             Skd *= 1.1
-            target_speed = 20
-            zone_throttle = 0.3
+            target_speed = 40
             # if current_speed > max_velocity:
             #     self.stopThrottle = True
             # if self.same_zone and currtime - turnTimer > 1:
@@ -256,7 +253,6 @@ class RoarCompetitionSolution_MAIN:
             self.stopThrottle = True
             # print("BREAK BREAK")
             target_speed = 40
-            zone_throttle = 0.3
             # if current_speed >= max_velocity:
             #     self.stopThrottle = True
             # if self.same_zone and currtime - turnTimer > 1:
@@ -272,7 +268,7 @@ class RoarCompetitionSolution_MAIN:
         elif zone == 2:
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
             target_speed = 130
-            Skp *= 1.5
+            Skp *= 0.920
             print("ZONE DETECTED 2")
             # if current_speed < max_velocity:
             #     full_throttle = True
@@ -287,7 +283,7 @@ class RoarCompetitionSolution_MAIN:
             if current_speed >= 60:
                 max_velocity -= 20
         elif zone == 5:
-            target_speed = 20
+            target_speed = 32
             # print("BREAK BREAK")
             Skp *= 1.4
             # if current_speed > max_velocity and current_speed > target_speed:
@@ -300,19 +296,15 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = False
             #     self.handbrake = 0
             print("ZONE DETECTED 5")
-            waypoint_to_follow = self.maneuverable_waypoints[
-                (self.current_waypoint_idx + 2) % len(self.maneuverable_waypoints)]
-            delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
-            max_velocity = 32
+            max_velocity = 31
         elif zone == 6:
             # print("BREAK BREAK")
             # if current_speed > max_velocity:
             #     self.stopThrottle = True
             print("ZONE DETECTED 6")
             Skp *= 2.5
-            target_speed = 20
-            zone_throttle = 0.3
-            max_velocity = 35
+            target_speed = 37
+            max_velocity = 33
 
         self.prev_zone = zone
 
@@ -363,47 +355,28 @@ class RoarCompetitionSolution_MAIN:
         throttle_control = Kp * error + Ki * integral + Kd * derivative
         # if abs(delta_heading) > 0.018:
         #     throttle_control = 0
-        if full_throttle:
-            throttle_control = 1
 
         print("delta heading:", delta_heading)
-        if current_speed > max_velocity:
-            throttle_control = 0.3
-            stop_brake = 1
-        else:
-            if delta_heading > 0.01:
-                throttle_control = zone_throttle
-            else:
-                throttle_control = 1
-
-
-        # if self.stopThrottle:
-        #     throttle_control = 0.3
-        # else:
-        #     throttle_control = 1
-        # if self.accelerate:
-        #     throttle_control = 1
-        #
-        # if fullStop:
-        #     throttle_control = 0
 
         print("throttle", throttle_control)
         print("heading", delta_heading)
 
         # apply anti-windup???
         gear = max(1, (current_speed // 10))
-        if throttle_control == -1:
-            gear = -1
 
         print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
-        self.integral_prior = integral
         if current_speed > max_velocity:
-            self.throttle = 0
+            throttle_control = -1
             stop_brake = 1
+        else:
+            throttle_control = 1
+
+        if throttle_control == -1:
+            gear = -1
 
         control = {
-            "throttle": np.clip(self.throttle, 0.0, 1.0),
+            "throttle": np.clip(throttle_control, 0.0, 1.0),
             "steer": steer_control,
             "brake": stop_brake,
             "hand_brake": self.handbrake,
