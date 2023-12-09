@@ -8,8 +8,8 @@ import roar_py_interface
 import numpy as np
 import time
 import json
-import logging
-logging.basicConfig(level=logging.WARNING)
+# import logging
+
 
 class ZoneController:
     def __init__(self):
@@ -118,7 +118,7 @@ class RoarCompetitionSolution_MAIN:
         self.steer_integral_error_prior = 0
         self.prev_key = 14
         self.K_val_thresholds = []
-        with open(r'PIDconfig.json') as json_file:
+        with open('PIDconfig.json') as json_file:
             self.data = json.load(json_file)
         controller_values = self.data["Throttle_Controller"]
         for key in controller_values:
@@ -181,7 +181,7 @@ class RoarCompetitionSolution_MAIN:
                     waypoint1.location[1] - waypoint3.location[1]) ** 2)))
         acceleration = 0.9 * 9.81
         max_velocity = np.sqrt(acceleration / 1 / inverse_radius)
-        logging.info("max velocity", max_velocity)
+        print("max velocity", max_velocity)
 
 
 
@@ -192,7 +192,7 @@ class RoarCompetitionSolution_MAIN:
         heading_to_waypoint = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
         # Calculate delta angle towards the target waypoint
         # DEBUG: print("rotation" + str(vehicle_rotation[2]))
-        logging.info(heading_to_waypoint)
+        print(heading_to_waypoint)
         delta_heading = normalize_rad(heading_to_waypoint - vehicle_rotation[2])
         curr_Speed = (int(vehicle_velocity_norm))
         # appending our current speed in an array with all the speed boundaries in PID config
@@ -247,7 +247,7 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = False
             # if self.same_zone and currtime - turnTimer > 2:
             #     self.accelerate = True
-            logging.info("ZONE DETECTED 4")
+            print("ZONE DETECTED 4")
         elif zone == 3:
             Skp *= 1.2
             self.stopThrottle = True
@@ -270,7 +270,7 @@ class RoarCompetitionSolution_MAIN:
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
             target_speed = 300
             Skp *= 0.8
-            logging.info("ZONE DETECTED 2")
+            print("ZONE DETECTED 2")
             # if current_speed < max_velocity:
             #     full_throttle = True
         elif zone == 1:
@@ -278,7 +278,7 @@ class RoarCompetitionSolution_MAIN:
             Skp *= 0.85
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
             target_speed = 300
-            logging.info("ZONE DETECTED 1")
+            print("ZONE DETECTED 1")
             # if current_speed < max_velocity:
             #     full_throttle = True
             if current_speed >= 60:
@@ -297,12 +297,12 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = False
             #     self.handbrake = 0
 
-            logging.info("ZONE DETECTED 5")
+            print("ZONE DETECTED 5")
         elif zone == 6:
             # print("BREAK BREAK")
             # if current_speed > max_velocity:
             #     self.stopThrottle = True
-            logging.info("ZONE DETECTED 6")
+            print("ZONE DETECTED 6")
             Skp *= 2
             target_speed = 33
             # max_velocity = 33
@@ -323,6 +323,7 @@ class RoarCompetitionSolution_MAIN:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
+        print("steer control" + str(steer_control))
         self.steer_integral_error_prior = steer_integral
         self.steer_error_prior = steer_error
         # normal implementation of throttle algo
@@ -351,15 +352,15 @@ class RoarCompetitionSolution_MAIN:
         ) if vehicle_velocity_norm > 1e-2 else -np.sign(delta_heading)
         steer_control = np.clip(steer_control, -1.0, 1.0)
 
-        logging.info("steer control" + str(steer_control))
+        print("steer control" + str(steer_control))
         throttle_control = Kp * error + Ki * integral + Kd * derivative
         # if abs(delta_heading) > 0.018:
         #     throttle_control = 0
 
-        logging.info("delta heading:", delta_heading)
+        print("delta heading:", delta_heading)
 
-        logging.info("throttle", throttle_control)
-        logging.info("heading", delta_heading)
+        print("throttle", throttle_control)
+        print("heading", delta_heading)
 
         # apply anti-windup???
         gear = max(1, (current_speed // 10))
