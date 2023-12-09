@@ -26,7 +26,7 @@ class ZoneController:
         if (-75 < car_location[0] < 140 and -115 < car_location[1] < 200) or (
                 -170 < car_location[0] < -100 and -1050 < car_location[1] < -890):
             return 6
-        elif (-400 < car_location[0] < -240 and 250 < car_location[1] < 350):
+        elif (-400 < car_location[0] < -240 and 230 < car_location[1] < 350):
             return 5
         elif (car_location[0] < -350 and car_location[1] < 220) or (
                 -200.0 <= car_location[0] < 300 and 700.0 <= car_location[1] < 905) or (
@@ -268,8 +268,8 @@ class RoarCompetitionSolution_MAIN:
         elif zone == 2:
             full_throttle = True
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
-            target_speed = 130
-            Skp *= 0.920
+            target_speed = 300
+            Skp *= 0.8
             print("ZONE DETECTED 2")
             # if current_speed < max_velocity:
             #     full_throttle = True
@@ -277,14 +277,14 @@ class RoarCompetitionSolution_MAIN:
             Skd += 0.01
             Skp *= 0.85
             # reduce SKP FOR SLIGHTLY STRAIGHTER LINES BECAUSE IT OVERSHOOTS IN GRAPH
-            target_speed = 200
+            target_speed = 300
             print("ZONE DETECTED 1")
             # if current_speed < max_velocity:
             #     full_throttle = True
             if current_speed >= 60:
                 max_velocity -= 20
         elif zone == 5:
-            target_speed = 70
+            target_speed = 200
             # print("BREAK BREAK")
             Skp *= 1
             # if current_speed > max_velocity and current_speed > target_speed:
@@ -296,6 +296,7 @@ class RoarCompetitionSolution_MAIN:
             # else:
             #     self.stopThrottle = False
             #     self.handbrake = 0
+
             print("ZONE DETECTED 5")
         elif zone == 6:
             # print("BREAK BREAK")
@@ -303,7 +304,7 @@ class RoarCompetitionSolution_MAIN:
             #     self.stopThrottle = True
             print("ZONE DETECTED 6")
             Skp *= 2
-            target_speed = 35
+            target_speed = 33
             # max_velocity = 33
 
         self.prev_zone = zone
@@ -367,8 +368,14 @@ class RoarCompetitionSolution_MAIN:
         print("speed: " + str(vehicle_velocity_norm))
         self.error_prior = error
         if current_speed > max_velocity:
-            throttle_control = -1
-            stop_brake = 1
+            if zone == 5:
+                if abs(delta_heading) > 0.032:
+                    throttle_control = -1
+                    stop_brake = 1
+            else:
+                throttle_control = -1
+                stop_brake = 1
+
         elif full_throttle:
             throttle_control = 1
 
