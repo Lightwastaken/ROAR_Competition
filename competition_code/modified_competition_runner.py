@@ -12,7 +12,6 @@ import json
 from BetaController import ZoneController
 
 
-
 class RoarCompetitionRule:
     def __init__(
             self,
@@ -24,6 +23,7 @@ class RoarCompetitionRule:
         # self.waypoint_occupancy = np.zeros(len(waypoints),dtype=np.bool_)
         self.vehicle = vehicle
         self.world = world
+        self.zoneControl = ZoneController()
         self._last_vehicle_location = vehicle.get_3d_location()
         self._respawn_location = None
         self._respawn_rpy = None
@@ -128,8 +128,9 @@ async def evaluate_solution(
         solution_constructor: Type[RoarCompetitionSolution_MAIN],
         max_seconds=12000,
         enable_visualization: bool = False,
-) -> Optional[Dict[str, Any]]:
+        self=None) -> Optional[Dict[str, Any]]:
     if enable_visualization:
+        zone = ZoneController()
         viewer = PyGameViewer2()
 
     # Spawn vehicle and sensors to receive data
@@ -231,8 +232,11 @@ async def evaluate_solution(
             occupancy_map = occupancy_map_sensor.producer.plot_occupancy_map(vehicle.get_3d_location()[:2],
                                                                              vehicle.get_roll_pitch_yaw()[2])
             heading = vehicle.get_roll_pitch_yaw()[2]
-            current_speed = np.linalg.norm(vehicle.get_linear_3d_velocity())
-            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map, location_sensor.get_last_observation(), waypoints, current_speed, heading, target_heading) is None:
+            current_speed = np.linalg.norm(vehicle.get_3d_location()[:2])
+            zone = self.zoneControl.get_current_zone(vehicle.get_3d_location())
+            if viewer.render(camera.get_last_observation(), depth_camera.get_last_observation(), occupancy_map,
+                             location_sensor.get_last_observation(), waypoints, current_speed, heading,
+                             target_heading) is None:
                 vehicle.close()
                 return None
 
