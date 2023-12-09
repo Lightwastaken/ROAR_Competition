@@ -118,7 +118,7 @@ class RoarCompetitionSolution:
         self.steer_integral_error_prior = 0
         self.prev_key = 14
         self.K_val_thresholds = []
-        with open(r'C:\Users\roar\Desktop\ROAR_PY\ROAR_Competition\competition_code\PIDconfig.json') as json_file:
+        with open('PIDconfig.json') as json_file:
             self.data = json.load(json_file)
         controller_values = self.data["Throttle_Controller"]
         for key in controller_values:
